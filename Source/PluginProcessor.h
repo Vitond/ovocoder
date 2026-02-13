@@ -54,13 +54,13 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
     //==============================================================================
-    float getEnvelopeValue() const { return envelopeValue.load(); }
+    float getEnvelopeValue(int channel) const { return envelopeValues[channel].load(); }
 
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessor)
-    float envelopeState = 0.0f;
+    float envelopeStates[2] = {0.0f, 0.0f};
     float attackCoeff = 0.0f;
     float releaseCoeff = 0.0f;
-    std::atomic<float> envelopeValue = 0.0f;
+    std::atomic<float> envelopeValues[2] = {0.0f, 0.0f};
 };

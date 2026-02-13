@@ -14,8 +14,8 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     : AudioProcessorEditor (&p), audioProcessor (p)
 {
 
-    addAndMakeVisible(envelopeLabel);
-    envelopeLabel.setText("label", juce::dontSendNotification);
+    addAndMakeVisible(envelopeLabelLeft);
+    addAndMakeVisible(envelopeLabelRight);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (400, 300);
@@ -27,8 +27,10 @@ OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()
 }
 
 void OvocoderAudioProcessorEditor::timerCallback() {
-  float envelopeValue = audioProcessor.getEnvelopeValue();
-  envelopeLabel.setText(juce::String(envelopeValue, 6), juce::dontSendNotification);
+  float envelopeValueLeft = audioProcessor.getEnvelopeValue(0);
+  float envelopeValueRight = audioProcessor.getEnvelopeValue(1);
+  envelopeLabelLeft.setText(juce::String(envelopeValueLeft, 6), juce::dontSendNotification);
+  envelopeLabelRight.setText(juce::String(envelopeValueRight, 6), juce::dontSendNotification);
 }
 
 //==============================================================================
@@ -41,7 +43,8 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
 void OvocoderAudioProcessorEditor::resized()
 {
     auto bounds = getLocalBounds();
-    envelopeLabel.setBounds(bounds.removeFromTop(40));
+    envelopeLabelLeft.setBounds(bounds.removeFromTop(40));
+    envelopeLabelRight.setBounds(bounds.removeFromTop(80));
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
 }

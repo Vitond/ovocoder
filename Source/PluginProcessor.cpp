@@ -155,23 +155,24 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < 1; ++channel)
+    for (int channel = 0; channel < 2; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
         int numSamples = buffer.getNumSamples();
         
         for (int sample = 0; sample < numSamples; sample++) {
             float absoluteValue = std::abs(channelData[sample]);
+            float envelopeState = envelopeStates[channel];
 
             if (absoluteValue > envelopeState) {
-                envelopeState += (absoluteValue - envelopeState) * attackCoeff;
+                envelopeStates[channel] += (absoluteValue - envelopeState) * attackCoeff;
             } else {
-                envelopeState -= (envelopeState - absoluteValue) * releaseCoeff;
+                envelopeStates[channel] -= (envelopeState - absoluteValue) * releaseCoeff;
             }
         }
-    }
 
-    envelopeValue.store(envelopeState);
+        envelopeValues[channel].store(envelopeStates[channel]);
+    }
 }
 
 //==============================================================================
