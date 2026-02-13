@@ -16,6 +16,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                       .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
@@ -149,16 +150,19 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
+    auto sidechainBuffer = getBusBuffer(buffer, true, 1);
+    auto numSidechainChannels = sidechainBuffer.getNumChannels();
+
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
     // Make sure to reset the state if your inner loop is processing
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < 2; ++channel)
+    for (int channel = 0; channel < numSidechainChannels; ++channel)
     {
-        auto* channelData = buffer.getWritePointer (channel);
-        int numSamples = buffer.getNumSamples();
+        auto* channelData = sidechainBuffer.getWritePointer (channel);
+        int numSamples = sidechainBuffer.getNumSamples();
         
         for (int sample = 0; sample < numSamples; sample++) {
             float absoluteValue = std::abs(channelData[sample]);
