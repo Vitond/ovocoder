@@ -14,7 +14,7 @@
 //==============================================================================
 /**
 */
-class OvocoderAudioProcessorEditor  : public juce::AudioProcessorEditor
+class OvocoderAudioProcessorEditor  : public juce::AudioProcessorEditor, private juce::Timer
 {
 public:
     OvocoderAudioProcessorEditor (OvocoderAudioProcessor&);
@@ -30,4 +30,7 @@ private:
     OvocoderAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessorEditor)
+    juce::Label envelopeLabel;
+
+    void timerCallback() override;
 };

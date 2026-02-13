@@ -93,8 +93,13 @@ void OvocoderAudioProcessor::changeProgramName (int index, const juce::String& n
 //==============================================================================
 void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    // Use this method as the place to do any pre-playback
-    // initialisation that you need..
+    float releaseInMs = 100.0f;
+    float attackInMs = 20.0f;
+    float releaseInSamples = releaseInMs * sampleRate / 1000;
+    float attackInSamples = attackInMs * sampleRate / 1000;
+
+    releaseCoeff = std::exp(-1 / releaseInSamples);
+    attackCoeff = std::exp(-1 / attackInSamples);
 }
 
 void OvocoderAudioProcessor::releaseResources()
@@ -150,12 +155,23 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < totalNumInputChannels; ++channel)
+    for (int channel = 0; channel < 1; ++channel)
     {
         auto* channelData = buffer.getWritePointer (channel);
+        int numSamples = buffer.getNumSamples();
+        
+        for (int sample = 0; sample < numSamples; sample++) {
+            float absoluteValue = std::abs(channelData[sample]);
 
-        // ..do something to the data...
+            if (absoluteValue > envelopeState) {
+                envelopeState += (absoluteValue - envelopeState) * attackCoeff;
+            } else {
+                envelopeState -= (envelopeState - absoluteValue) * releaseCoeff;
+            }
+        }
     }
+
+    envelopeValue.store(envelopeState);
 }
 
 //==============================================================================
