@@ -107,12 +107,18 @@ void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = 1;
 
-    filters[0].prepare(spec);
-    filters[1].prepare(spec);
+    float minCenterFreq = 80.0;
+    float maxCenterFreq = 7800.0;
 
-    Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, 800);
-    filters[0].coefficients = coefficients;
-    filters[1].coefficients = coefficients;
+    for (int channel = 0; channel < numChannels; channel++) {
+        for (int i = 0; i < numBands; i++)  {
+            filters[channel][i].prepare(spec);
+            float ratio = i / (numBands - 1);
+            float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
+            Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq);
+            filters[channel][i].coefficients = coefficients;
+        }
+    }
 }
 
 void OvocoderAudioProcessor::releaseResources()
@@ -198,7 +204,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (int channel = 0; channel < numMainChannels; channel++) {
         juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
         juce::dsp::ProcessContextReplacing<float> channelContext(channelBlock);
-        filters[channel].process(channelContext);
+        filters[channel][0].process(channelContext);
     }
 }
 

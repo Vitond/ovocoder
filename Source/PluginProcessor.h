@@ -67,5 +67,7 @@ private:
     using Filter = juce::dsp::IIR::Filter<float>;
     using Coefficients = juce::dsp::IIR::Coefficients<float>;
 
-    Filter filters[2];
+    static constexpr int numBands = 10;
+    static constexpr int numChannels = 2;
+    Filter filters[numChannels][numBands];
 };
