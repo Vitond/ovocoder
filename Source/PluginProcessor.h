@@ -63,4 +63,9 @@ private:
     float attackCoeff = 0.0f;
     float releaseCoeff = 0.0f;
     std::atomic<float> envelopeValues[2] = {0.0f, 0.0f};
+
+    using Filter = juce::dsp::IIR::Filter<float>;
+    using Coefficients = juce::dsp::IIR::Coefficients<float>;
+
+    Filter filters[2];
 };

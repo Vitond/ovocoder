@@ -101,6 +101,18 @@ void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
 
     releaseCoeff = std::exp(-1 / releaseInSamples);
     attackCoeff = std::exp(-1 / attackInSamples);
+
+    juce::dsp::ProcessSpec spec;
+    spec.sampleRate = sampleRate;
+    spec.maximumBlockSize = samplesPerBlock;
+    spec.numChannels = 1;
+
+    filters[0].prepare(spec);
+    filters[1].prepare(spec);
+
+    Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, 800);
+    filters[0].coefficients = coefficients;
+    filters[1].coefficients = coefficients;
 }
 
 void OvocoderAudioProcessor::releaseResources()
@@ -150,8 +162,8 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    auto sidechainBuffer = getBusBuffer(buffer, true, 1);
-    auto numSidechainChannels = sidechainBuffer.getNumChannels();
+    juce::AudioBuffer<float> sidechainBuffer = getBusBuffer(buffer, true, 1);
+    int numSidechainChannels = sidechainBuffer.getNumChannels();
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
@@ -161,7 +173,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // interleaved by keeping the same state.
     for (int channel = 0; channel < numSidechainChannels; ++channel)
     {
-        auto* channelData = sidechainBuffer.getWritePointer (channel);
+        float* channelData = sidechainBuffer.getWritePointer(channel);
         int numSamples = sidechainBuffer.getNumSamples();
         
         for (int sample = 0; sample < numSamples; sample++) {
@@ -176,6 +188,17 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
 
         envelopeValues[channel].store(envelopeStates[channel]);
+    }
+
+    juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
+    int numMainChannels = mainBuffer.getNumChannels();
+
+    juce::dsp::AudioBlock<float> mainBlock(mainBuffer.getArrayOfWritePointers(), numMainChannels, mainBuffer.getNumSamples());
+
+    for (int channel = 0; channel < numMainChannels; channel++) {
+        juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
+        juce::dsp::ProcessContextReplacing<float> channelContext(channelBlock);
+        filters[channel].process(channelContext);
     }
 }
 
