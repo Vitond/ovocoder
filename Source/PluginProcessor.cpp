@@ -112,11 +112,11 @@ void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
 
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
-            filters[channel][i].prepare(spec);
-            float ratio = i / (numBands - 1);
+            sidechainFilters[channel][i].prepare(spec);
+            float ratio = static_cast<float>(i) / (numBands - 1);
             float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
             Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq);
-            filters[channel][i].coefficients = coefficients;
+            sidechainFilters[channel][i].coefficients = coefficients;
         }
     }
 }
@@ -183,29 +183,36 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         int numSamples = sidechainBuffer.getNumSamples();
         
         for (int sample = 0; sample < numSamples; sample++) {
-            float absoluteValue = std::abs(channelData[sample]);
-            float envelopeState = envelopeStates[channel];
 
-            if (absoluteValue > envelopeState) {
-                envelopeStates[channel] += (absoluteValue - envelopeState) * attackCoeff;
-            } else {
-                envelopeStates[channel] -= (envelopeState - absoluteValue) * releaseCoeff;
+            for (int band = 0; band < numBands; band++) {
+                float processedSample = sidechainFilters[channel][band].processSample(channelData[sample]);
+                float absoluteValue = std::abs(processedSample);
+                float envelopeState = envelopeStates[channel][band];
+
+                if (absoluteValue > envelopeState) {
+                    envelopeStates[channel][band] += (absoluteValue - envelopeState) * attackCoeff;
+                } else {
+                    envelopeStates[channel][band] -= (envelopeState - absoluteValue) * releaseCoeff;
+                }
             }
+
         }
 
-        envelopeValues[channel].store(envelopeStates[channel]);
+        for (int band = 0; band < numBands; band++) {
+            envelopeValues[channel][band].store(envelopeStates[channel][band]);
+        }
     }
 
-    juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
-    int numMainChannels = mainBuffer.getNumChannels();
+    // juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
+    // int numMainChannels = mainBuffer.getNumChannels();
 
-    juce::dsp::AudioBlock<float> mainBlock(mainBuffer.getArrayOfWritePointers(), numMainChannels, mainBuffer.getNumSamples());
+    // juce::dsp::AudioBlock<float> mainBlock(mainBuffer.getArrayOfWritePointers(), numMainChannels, mainBuffer.getNumSamples());
 
-    for (int channel = 0; channel < numMainChannels; channel++) {
-        juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
-        juce::dsp::ProcessContextReplacing<float> channelContext(channelBlock);
-        filters[channel][0].process(channelContext);
-    }
+    // for (int channel = 0; channel < numMainChannels; channel++) {
+    //     juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
+    //     juce::dsp::ProcessContextReplacing<float> channelContext(channelBlock);
+    //     sidechainFilters[channel][0].process(channelContext);
+    // }
 }
 
 //==============================================================================

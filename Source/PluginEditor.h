@@ -30,8 +30,8 @@ private:
     OvocoderAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessorEditor)
-    juce::Label envelopeLabelLeft;
-    juce::Label envelopeLabelRight;
+
+    float bandEnvelopes[2][OvocoderAudioProcessor::numBands];
 
     void timerCallback() override;
 };
