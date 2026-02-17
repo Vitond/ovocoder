@@ -56,7 +56,7 @@ public:
     //==============================================================================
     float getEnvelopeValue(int channel, int band) const { return envelopeValues[channel][band].load(); }
 
-    static constexpr int numBands = 10;
+    static constexpr int numBands = 12;
     static constexpr int numChannels = 2;
 
 private:

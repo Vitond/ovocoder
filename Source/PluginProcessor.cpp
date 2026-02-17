@@ -107,8 +107,8 @@ void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = 1;
 
-    float minCenterFreq = 80.0;
-    float maxCenterFreq = 7800.0;
+    float minCenterFreq = 20.0;
+    float maxCenterFreq = 20000.0;
 
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
