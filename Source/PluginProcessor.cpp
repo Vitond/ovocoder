@@ -113,12 +113,17 @@ void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlo
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
             sidechainFilters[channel][i].prepare(spec);
+            mainFilters[channel][i].prepare(spec);
             float ratio = static_cast<float>(i) / (numBands - 1);
             float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
             Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq);
             sidechainFilters[channel][i].coefficients = coefficients;
+            mainFilters[channel][i].coefficients = coefficients;
         }
     }
+
+    processBuffer.setSize(numChannels, samplesPerBlock);
+    outputBuffer.setSize(numChannels, samplesPerBlock);
 }
 
 void OvocoderAudioProcessor::releaseResources()
@@ -203,16 +208,29 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
 
-    // juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
-    // int numMainChannels = mainBuffer.getNumChannels();
+    juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
+    int numMainChannels = mainBuffer.getNumChannels();
+    int numMainSamples = mainBuffer.getNumSamples();
 
-    // juce::dsp::AudioBlock<float> mainBlock(mainBuffer.getArrayOfWritePointers(), numMainChannels, mainBuffer.getNumSamples());
+    juce::dsp::AudioBlock<float> mainBlock(mainBuffer.getArrayOfWritePointers(), numMainChannels, numMainSamples);
+    juce::dsp::AudioBlock<float> processBlock(processBuffer.getArrayOfWritePointers(), numMainChannels, numMainSamples);
 
-    // for (int channel = 0; channel < numMainChannels; channel++) {
-    //     juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
-    //     juce::dsp::ProcessContextReplacing<float> channelContext(channelBlock);
-    //     sidechainFilters[channel][0].process(channelContext);
-    // }
+    outputBuffer.clear();
+
+    for (int channel = 0; channel < numMainChannels; channel++) {
+        juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
+        juce::dsp::AudioBlock<float> channelProcessBlock = processBlock.getSingleChannelBlock(channel);
+        juce::dsp::ProcessContextNonReplacing<float> channelContext(channelBlock, channelProcessBlock);
+
+        for (int band = 0; band < numBands; band++) {
+            mainFilters[channel][band].process(channelContext);
+            outputBuffer.addFrom(channel, 0, processBuffer, channel, 0, numMainSamples, envelopeStates[channel][band]);
+        }
+    }
+
+    for (int channel = 0; channel < numMainChannels; channel++) {
+        mainBuffer.copyFrom(channel, 0, outputBuffer, channel, 0, numMainSamples);
+    }
 }
 
 //==============================================================================

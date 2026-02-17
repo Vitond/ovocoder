@@ -71,4 +71,8 @@ private:
     using Coefficients = juce::dsp::IIR::Coefficients<float>;
 
     Filter sidechainFilters[numChannels][numBands];
+    Filter mainFilters[numChannels][numBands];
+
+    juce::AudioBuffer<float> processBuffer;
+    juce::AudioBuffer<float> outputBuffer;
 };
