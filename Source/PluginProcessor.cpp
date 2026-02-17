@@ -174,7 +174,9 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         buffer.clear (i, 0, buffer.getNumSamples());
 
     juce::AudioBuffer<float> sidechainBuffer = getBusBuffer(buffer, true, 1);
-    int numSidechainChannels = sidechainBuffer.getNumChannels();
+    juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
+    int numChannels = mainBuffer.getNumChannels();
+    int numSamples = mainBuffer.getNumSamples();
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
@@ -182,24 +184,31 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     // the samples and the outer loop is handling the channels.
     // Alternatively, you can process the samples with the channels
     // interleaved by keeping the same state.
-    for (int channel = 0; channel < numSidechainChannels; ++channel)
+    for (int channel = 0; channel < numChannels; ++channel)
     {
-        float* channelData = sidechainBuffer.getWritePointer(channel);
-        int numSamples = sidechainBuffer.getNumSamples();
+        float* sidechainChannelData = sidechainBuffer.getWritePointer(channel);
+        float* mainChannelData = mainBuffer.getWritePointer(channel);
         
         for (int sample = 0; sample < numSamples; sample++) {
 
+            float sumMainSample = 0.0f;
+
             for (int band = 0; band < numBands; band++) {
-                float processedSample = sidechainFilters[channel][band].processSample(channelData[sample]);
-                float absoluteValue = std::abs(processedSample);
+                float processedSidechainSample = sidechainFilters[channel][band].processSample(sidechainChannelData[sample]);
+                float absoluteProcessedSidechainValue = std::abs(processedSidechainSample);
                 float envelopeState = envelopeStates[channel][band];
 
-                if (absoluteValue > envelopeState) {
-                    envelopeStates[channel][band] += (absoluteValue - envelopeState) * attackCoeff;
+                if (absoluteProcessedSidechainValue > envelopeState) {
+                    envelopeStates[channel][band] += (absoluteProcessedSidechainValue - envelopeState) * attackCoeff;
                 } else {
-                    envelopeStates[channel][band] -= (envelopeState - absoluteValue) * releaseCoeff;
+                    envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * releaseCoeff;
                 }
+
+                float processedMainSample = mainFilters[channel][band].processSample(mainChannelData[sample]);
+                sumMainSample += processedMainSample * envelopeStates[channel][band];
             }
+
+            mainChannelData[sample] = sumMainSample;
 
         }
 
@@ -208,29 +217,6 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         }
     }
 
-    juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
-    int numMainChannels = mainBuffer.getNumChannels();
-    int numMainSamples = mainBuffer.getNumSamples();
-
-    juce::dsp::AudioBlock<float> mainBlock(mainBuffer.getArrayOfWritePointers(), numMainChannels, numMainSamples);
-    juce::dsp::AudioBlock<float> processBlock(processBuffer.getArrayOfWritePointers(), numMainChannels, numMainSamples);
-
-    outputBuffer.clear();
-
-    for (int channel = 0; channel < numMainChannels; channel++) {
-        juce::dsp::AudioBlock<float> channelBlock = mainBlock.getSingleChannelBlock(channel);
-        juce::dsp::AudioBlock<float> channelProcessBlock = processBlock.getSingleChannelBlock(channel);
-        juce::dsp::ProcessContextNonReplacing<float> channelContext(channelBlock, channelProcessBlock);
-
-        for (int band = 0; band < numBands; band++) {
-            mainFilters[channel][band].process(channelContext);
-            outputBuffer.addFrom(channel, 0, processBuffer, channel, 0, numMainSamples, envelopeStates[channel][band]);
-        }
-    }
-
-    for (int channel = 0; channel < numMainChannels; channel++) {
-        mainBuffer.copyFrom(channel, 0, outputBuffer, channel, 0, numMainSamples);
-    }
 }
 
 //==============================================================================
