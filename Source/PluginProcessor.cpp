@@ -199,9 +199,9 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 float envelopeState = envelopeStates[channel][band];
 
                 if (absoluteProcessedSidechainValue > envelopeState) {
-                    envelopeStates[channel][band] += (absoluteProcessedSidechainValue - envelopeState) * attackCoeff;
+                    envelopeStates[channel][band] += (absoluteProcessedSidechainValue - envelopeState) * (1.0f - attackCoeff);
                 } else {
-                    envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * releaseCoeff;
+                    envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * (1.0f - releaseCoeff);
                 }
 
                 float processedMainSample = mainFilters[channel][band].processSample(mainChannelData[sample]);
