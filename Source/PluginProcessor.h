@@ -13,7 +13,7 @@
 //==============================================================================
 /**
 */
-class OvocoderAudioProcessor  : public juce::AudioProcessor
+class OvocoderAudioProcessor  : public juce::AudioProcessor, public juce::AudioProcessorValueTreeState::Listener
 {
 public:
     //==============================================================================
@@ -75,4 +75,14 @@ private:
 
     juce::AudioBuffer<float> processBuffer;
     juce::AudioBuffer<float> outputBuffer;
+
+    juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
+    juce::AudioProcessorValueTreeState apvts;
+
+    void setAttackCoeff(float attackInMs);
+    void setReleaseCoeff(float releaseInMs);
+
+    int sampleRate = 48000;
+
+    void parameterChanged(const juce::String & parameterId, float newValue) override;
 };

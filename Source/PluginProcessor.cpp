@@ -9,6 +9,27 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::createParameterLayout() {
+    juce::AudioProcessorValueTreeState::ParameterLayout parameterLayout(
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "attack", 
+            "Attack", 
+            juce::NormalisableRange(0.1f, 100.0f, 0.1f),
+            1.0f,
+            juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "release", 
+            "Release", 
+            juce::NormalisableRange(1.0f, 500.0f, 0.1f),
+            1.0f,
+            juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
+        )
+    );
+    return parameterLayout;
+}
 //==============================================================================
 OvocoderAudioProcessor::OvocoderAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -20,13 +41,20 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
                      #endif
-                       )
+                       ),
+#else
+    :
 #endif
+        apvts(*this, nullptr, "parameters", createParameterLayout())
 {
+    apvts.addParameterListener("attack", this);
+    apvts.addParameterListener("release", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
 {
+    apvts.removeParameterListener("attack", this);
+    apvts.removeParameterListener("release", this);
 }
 
 //==============================================================================
@@ -91,16 +119,30 @@ void OvocoderAudioProcessor::changeProgramName (int index, const juce::String& n
 {
 }
 
-//==============================================================================
-void OvocoderAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
-{
-    float releaseInMs = 100.0f;
-    float attackInMs = 20.0f;
-    float releaseInSamples = releaseInMs * sampleRate / 1000;
+void OvocoderAudioProcessor::setAttackCoeff(float attackInMs) {
     float attackInSamples = attackInMs * sampleRate / 1000;
-
-    releaseCoeff = std::exp(-1 / releaseInSamples);
     attackCoeff = std::exp(-1 / attackInSamples);
+}
+
+void OvocoderAudioProcessor::setReleaseCoeff(float releaseInMs) {
+    float releaseInSamples = releaseInMs * sampleRate / 1000;
+    releaseCoeff = std::exp(-1 / releaseInSamples);
+}
+
+void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,float newValue) {
+    if (parameterID == "attack") {
+        setAttackCoeff(newValue);
+    } else if (parameterID == "release") {
+        setReleaseCoeff(newValue);
+    }
+}
+//==============================================================================
+void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBlock)
+{
+    sampleRate = _sampleRate;
+
+    setReleaseCoeff(apvts.getRawParameterValue("release")->load());
+    setAttackCoeff(apvts.getRawParameterValue("attack")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
