@@ -34,4 +34,15 @@ private:
     float bandEnvelopes[2][OvocoderAudioProcessor::numBands];
 
     void timerCallback() override;
+
+    juce::Slider attackSlider;
+    juce::Slider releaseSlider;
+
+    juce::Colour mainColour = juce::Colour(200, 200, 66);
+
+    juce::AudioProcessorValueTreeState::SliderAttachment attackSliderAttachment;
+    juce::AudioProcessorValueTreeState::SliderAttachment releaseSliderAttachment;
+
+    juce::Label attackLabel;
+    juce::Label releaseLabel;
 };

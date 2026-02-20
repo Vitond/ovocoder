@@ -11,7 +11,9 @@
 
 //==============================================================================
 OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcessor& p)
-    : AudioProcessorEditor (&p), audioProcessor (p)
+    : AudioProcessorEditor (&p), audioProcessor (p),
+    attackSliderAttachment(audioProcessor.apvts, "attack", attackSlider),
+    releaseSliderAttachment(audioProcessor.apvts, "release", releaseSlider)
 {
 
     for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
@@ -23,6 +25,30 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     // editor's size to whatever you need it to be.
     setSize (800, 400);
     startTimer(16);
+
+    addAndMakeVisible(attackSlider);
+    addAndMakeVisible(releaseSlider);
+
+    attackSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    releaseSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    attackSlider.setNumDecimalPlacesToDisplay(2);
+    releaseSlider.setNumDecimalPlacesToDisplay(2);
+    attackSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
+    releaseSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
+    attackSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
+    releaseSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
+    attackSlider.setTextValueSuffix("ms");
+    releaseSlider.setTextValueSuffix("ms");
+
+    attackSlider.setBounds(0, 40, 80, 80);
+    releaseSlider.setBounds(100, 40, 80, 80);
+
+    attackLabel.setText("Attack", juce::NotificationType::dontSendNotification);
+    releaseLabel.setText("Release", juce::NotificationType::dontSendNotification);
+    attackLabel.attachToComponent(&attackSlider, false);
+    releaseLabel.attachToComponent(&releaseSlider, false);
+    addAndMakeVisible(attackLabel);
+    addAndMakeVisible(releaseLabel);
 }
 
 OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()
@@ -44,7 +70,7 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
-    g.setColour(juce::Colour(200, 200, 66));
+    g.setColour(mainColour);
 
     juce::Rectangle<int> bounds = getLocalBounds();
     int gap = 10;

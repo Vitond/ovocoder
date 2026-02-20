@@ -59,6 +59,8 @@ public:
     static constexpr int numBands = 12;
     static constexpr int numChannels = 2;
 
+    juce::AudioProcessorValueTreeState apvts;
+
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessor)
@@ -77,7 +79,6 @@ private:
     juce::AudioBuffer<float> outputBuffer;
 
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-    juce::AudioProcessorValueTreeState apvts;
 
     void setAttackCoeff(float attackInMs);
     void setReleaseCoeff(float releaseInMs);
