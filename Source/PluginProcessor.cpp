@@ -26,6 +26,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             juce::NormalisableRange(1.0f, 500.0f, 0.1f),
             1.0f,
             juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "q", 
+            "Q", 
+            juce::NormalisableRange(0.5f, 20.0f, 0.1f),
+            0.7071f
         )
     );
     return parameterLayout;
@@ -49,12 +56,14 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
 {
     apvts.addParameterListener("attack", this);
     apvts.addParameterListener("release", this);
+    apvts.addParameterListener("q", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
 {
     apvts.removeParameterListener("attack", this);
     apvts.removeParameterListener("release", this);
+    apvts.removeParameterListener("q", this);
 }
 
 //==============================================================================
@@ -129,11 +138,30 @@ void OvocoderAudioProcessor::setReleaseCoeff(float releaseInMs) {
     releaseCoeff = std::exp(-1 / releaseInSamples);
 }
 
+void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
+    qualityFactor = Q;
+    updateFilterCoefficients();
+}
+
+void OvocoderAudioProcessor::updateFilterCoefficients() {
+    for (int channel = 0; channel < numChannels; channel++) {
+        for (int i = 0; i < numBands; i++)  {
+            float ratio = static_cast<float>(i) / (numBands - 1);
+            float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
+            Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, qualityFactor);
+            sidechainFilters[channel][i].coefficients = coefficients;
+            mainFilters[channel][i].coefficients = coefficients;
+        }
+    }
+}
+
 void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,float newValue) {
     if (parameterID == "attack") {
         setAttackCoeff(newValue);
     } else if (parameterID == "release") {
         setReleaseCoeff(newValue);
+    } else if (parameterID == "q") {
+        setFilterQualityFactor(newValue);
     }
 }
 //==============================================================================
@@ -149,20 +177,14 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     spec.maximumBlockSize = samplesPerBlock;
     spec.numChannels = 1;
 
-    float minCenterFreq = 20.0;
-    float maxCenterFreq = 20000.0;
-
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
             sidechainFilters[channel][i].prepare(spec);
             mainFilters[channel][i].prepare(spec);
-            float ratio = static_cast<float>(i) / (numBands - 1);
-            float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
-            Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq);
-            sidechainFilters[channel][i].coefficients = coefficients;
-            mainFilters[channel][i].coefficients = coefficients;
         }
     }
+
+    updateFilterCoefficients();
 
     processBuffer.setSize(numChannels, samplesPerBlock);
     outputBuffer.setSize(numChannels, samplesPerBlock);

@@ -13,7 +13,8 @@
 OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcessor& p)
     : AudioProcessorEditor (&p), audioProcessor (p),
     attackSliderAttachment(audioProcessor.apvts, "attack", attackSlider),
-    releaseSliderAttachment(audioProcessor.apvts, "release", releaseSlider)
+    releaseSliderAttachment(audioProcessor.apvts, "release", releaseSlider),
+    filterQualitySliderAttachment(audioProcessor.apvts, "q", filterQualitySlider)
 {
 
     for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
@@ -28,27 +29,38 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
 
     addAndMakeVisible(attackSlider);
     addAndMakeVisible(releaseSlider);
+    addAndMakeVisible(filterQualitySlider);
 
     attackSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     releaseSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    filterQualitySlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     attackSlider.setNumDecimalPlacesToDisplay(2);
     releaseSlider.setNumDecimalPlacesToDisplay(2);
+    filterQualitySlider.setNumDecimalPlacesToDisplay(2);
     attackSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     releaseSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
+    filterQualitySlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     attackSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     releaseSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
+    filterQualitySlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     attackSlider.setTextValueSuffix("ms");
     releaseSlider.setTextValueSuffix("ms");
 
     attackSlider.setBounds(0, 40, 80, 80);
     releaseSlider.setBounds(100, 40, 80, 80);
+    filterQualitySlider.setBounds(200, 40, 80, 80);
 
     attackLabel.setText("Attack", juce::NotificationType::dontSendNotification);
     releaseLabel.setText("Release", juce::NotificationType::dontSendNotification);
+    filterQualityLabel.setText("Q", juce::NotificationType::dontSendNotification);
+
     attackLabel.attachToComponent(&attackSlider, false);
     releaseLabel.attachToComponent(&releaseSlider, false);
+    filterQualityLabel.attachToComponent(&filterQualitySlider, false);
+
     addAndMakeVisible(attackLabel);
     addAndMakeVisible(releaseLabel);
+    addAndMakeVisible(filterQualityLabel);
 }
 
 OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()

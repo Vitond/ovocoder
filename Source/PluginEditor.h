@@ -37,12 +37,15 @@ private:
 
     juce::Slider attackSlider;
     juce::Slider releaseSlider;
+    juce::Slider filterQualitySlider;
 
     juce::Colour mainColour = juce::Colour(200, 200, 66);
 
     juce::AudioProcessorValueTreeState::SliderAttachment attackSliderAttachment;
     juce::AudioProcessorValueTreeState::SliderAttachment releaseSliderAttachment;
+    juce::AudioProcessorValueTreeState::SliderAttachment filterQualitySliderAttachment;
 
     juce::Label attackLabel;
     juce::Label releaseLabel;
+    juce::Label filterQualityLabel;
 };

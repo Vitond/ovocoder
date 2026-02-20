@@ -82,8 +82,16 @@ private:
 
     void setAttackCoeff(float attackInMs);
     void setReleaseCoeff(float releaseInMs);
+    void setFilterQualityFactor(float Q);
+
+    void updateFilterCoefficients();
 
     int sampleRate = 48000;
 
     void parameterChanged(const juce::String & parameterId, float newValue) override;
+
+    float qualityFactor = 0.7071f;
+
+    float minCenterFreq = 20.0;
+    float maxCenterFreq = 20000.0;
 };
