@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 
+#define MAX_ORDER 8
 //==============================================================================
 /**
 */
@@ -72,8 +73,8 @@ private:
     using Filter = juce::dsp::IIR::Filter<float>;
     using Coefficients = juce::dsp::IIR::Coefficients<float>;
 
-    Filter sidechainFilters[numChannels][numBands];
-    Filter mainFilters[numChannels][numBands];
+    Filter sidechainFilters[numChannels][numBands][MAX_ORDER];
+    Filter mainFilters[numChannels][numBands][MAX_ORDER];
 
     juce::AudioBuffer<float> processBuffer;
     juce::AudioBuffer<float> outputBuffer;
@@ -94,4 +95,6 @@ private:
 
     float minCenterFreq = 20.0;
     float maxCenterFreq = 20000.0;
+
+    int order = 2;
 };

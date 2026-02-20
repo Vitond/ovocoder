@@ -146,11 +146,13 @@ void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
 void OvocoderAudioProcessor::updateFilterCoefficients() {
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
-            float ratio = static_cast<float>(i) / (numBands - 1);
-            float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
-            Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, qualityFactor);
-            sidechainFilters[channel][i].coefficients = coefficients;
-            mainFilters[channel][i].coefficients = coefficients;
+            for (int o = 0; o < order; o++) {
+                float ratio = static_cast<float>(i) / (numBands - 1);
+                float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
+                Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, qualityFactor);
+                sidechainFilters[channel][i][o].coefficients = coefficients;
+                mainFilters[channel][i][o].coefficients = coefficients;
+            }
         }
     }
 }
@@ -179,8 +181,10 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
 
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
-            sidechainFilters[channel][i].prepare(spec);
-            mainFilters[channel][i].prepare(spec);
+            for (int j = 0; j < MAX_ORDER; j++) {
+                sidechainFilters[channel][i][j].prepare(spec);
+                mainFilters[channel][i][j].prepare(spec);
+            }
         }
     }
 
@@ -258,7 +262,10 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             float sumMainSample = 0.0f;
 
             for (int band = 0; band < numBands; band++) {
-                float processedSidechainSample = sidechainFilters[channel][band].processSample(sidechainChannelData[sample]);
+                float processedSidechainSample = sidechainChannelData[sample];
+                for (int o = 0; o < order; o++) {
+                    processedSidechainSample = sidechainFilters[channel][band][o].processSample(processedSidechainSample);
+                }
                 float absoluteProcessedSidechainValue = std::abs(processedSidechainSample);
                 float envelopeState = envelopeStates[channel][band];
 
@@ -268,7 +275,10 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                     envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * (1.0f - releaseCoeff);
                 }
 
-                float processedMainSample = mainFilters[channel][band].processSample(mainChannelData[sample]);
+                float processedMainSample = mainChannelData[sample];
+                for (int o = 0; o < order; o++) {
+                    processedMainSample = mainFilters[channel][band][o].processSample(processedMainSample);
+                }
                 sumMainSample += processedMainSample * envelopeStates[channel][band];
             }
 
