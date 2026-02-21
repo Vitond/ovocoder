@@ -39,7 +39,8 @@ private:
       attackSlider,
       releaseSlider,
       filterQualitySlider,
-      filterOrderSlider;
+      filterOrderSlider,
+      outputGainSlider;
 
     juce::Colour mainColour = juce::Colour(200, 200, 66);
 
@@ -47,11 +48,13 @@ private:
       attackSliderAttachment,
       releaseSliderAttachment,
       filterQualitySliderAttachment,
-      filterOrderSliderAttachment;
+      filterOrderSliderAttachment,
+      outputGainSliderAttachment;
 
     juce::Label 
       attackLabel,
       releaseLabel,
       filterQualityLabel,
-      filterOrderLabel;
+      filterOrderLabel,
+      outputGainLabel;
 };

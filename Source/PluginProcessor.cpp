@@ -41,6 +41,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             1,
             8,
             2
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "gain", 
+            "Output gain", 
+            juce::NormalisableRange(0.0f, 40.0f, 0.1f),
+            0.0f
         )
     );
     return parameterLayout;
@@ -66,6 +73,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("release", this);
     apvts.addParameterListener("q", this);
     apvts.addParameterListener("order", this);
+    apvts.addParameterListener("gain", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -74,6 +82,7 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("release", this);
     apvts.removeParameterListener("q", this);
     apvts.removeParameterListener("order", this);
+    apvts.removeParameterListener("gain", this);
 }
 
 //==============================================================================
@@ -157,6 +166,10 @@ void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
     updateFilterCoefficients();
 }
 
+void OvocoderAudioProcessor::setOutputGain(float gainInDb) {
+    gain = std::pow(2, gainInDb / 10.0f);
+}
+
 void OvocoderAudioProcessor::updateFilterCoefficients() {
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
@@ -180,6 +193,8 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setFilterQualityFactor(newValue);
     } else if (parameterID == "order") {
         setFilterOrder((int)newValue);
+    } else if (parameterID == "gain") {
+        setOutputGain(newValue);
     }
 }
 //==============================================================================
@@ -191,6 +206,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     setAttackCoeff(apvts.getRawParameterValue("attack")->load());
     setFilterQualityFactor(apvts.getRawParameterValue("q")->load());
     setFilterOrder((int)apvts.getRawParameterValue("order")->load());
+    setOutputGain(apvts.getRawParameterValue("gain")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -300,7 +316,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 sumMainSample += processedMainSample * envelopeStates[channel][band];
             }
 
-            mainChannelData[sample] = sumMainSample;
+            mainChannelData[sample] = sumMainSample * gain;
 
         }
 

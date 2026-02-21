@@ -85,6 +85,7 @@ private:
     void setReleaseCoeff(float releaseInMs);
     void setFilterQualityFactor(float Q);
     void setFilterOrder(int order);
+    void setOutputGain(float gainInDb);
 
     void updateFilterCoefficients();
 
@@ -98,4 +99,6 @@ private:
     float maxCenterFreq = 20000.0;
 
     int order = 2;
+
+    float gain = 1.0;
 };
