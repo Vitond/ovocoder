@@ -84,6 +84,7 @@ private:
     void setAttackCoeff(float attackInMs);
     void setReleaseCoeff(float releaseInMs);
     void setFilterQualityFactor(float Q);
+    void setFilterOrder(int order);
 
     void updateFilterCoefficients();
 

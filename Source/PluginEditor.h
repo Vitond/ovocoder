@@ -35,17 +35,23 @@ private:
 
     void timerCallback() override;
 
-    juce::Slider attackSlider;
-    juce::Slider releaseSlider;
-    juce::Slider filterQualitySlider;
+    juce::Slider 
+      attackSlider,
+      releaseSlider,
+      filterQualitySlider,
+      filterOrderSlider;
 
     juce::Colour mainColour = juce::Colour(200, 200, 66);
 
-    juce::AudioProcessorValueTreeState::SliderAttachment attackSliderAttachment;
-    juce::AudioProcessorValueTreeState::SliderAttachment releaseSliderAttachment;
-    juce::AudioProcessorValueTreeState::SliderAttachment filterQualitySliderAttachment;
+    juce::AudioProcessorValueTreeState::SliderAttachment 
+      attackSliderAttachment,
+      releaseSliderAttachment,
+      filterQualitySliderAttachment,
+      filterOrderSliderAttachment;
 
-    juce::Label attackLabel;
-    juce::Label releaseLabel;
-    juce::Label filterQualityLabel;
+    juce::Label 
+      attackLabel,
+      releaseLabel,
+      filterQualityLabel,
+      filterOrderLabel;
 };

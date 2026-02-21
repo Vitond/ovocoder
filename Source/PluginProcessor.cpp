@@ -16,7 +16,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "attack", 
             "Attack", 
             juce::NormalisableRange(0.1f, 100.0f, 0.1f),
-            1.0f,
+            5.0f,
             juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
         ),
         std::make_unique<juce::AudioParameterFloat>
@@ -24,7 +24,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "release", 
             "Release", 
             juce::NormalisableRange(1.0f, 500.0f, 0.1f),
-            1.0f,
+            20.0f,
             juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
         ),
         std::make_unique<juce::AudioParameterFloat>
@@ -33,6 +33,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "Q", 
             juce::NormalisableRange(0.5f, 20.0f, 0.1f),
             0.7071f
+        ),
+        std::make_unique<juce::AudioParameterInt>
+        (
+            "order", 
+            "Order", 
+            1,
+            8,
+            2
         )
     );
     return parameterLayout;
@@ -57,6 +65,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("attack", this);
     apvts.addParameterListener("release", this);
     apvts.addParameterListener("q", this);
+    apvts.addParameterListener("order", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -64,6 +73,7 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("attack", this);
     apvts.removeParameterListener("release", this);
     apvts.removeParameterListener("q", this);
+    apvts.removeParameterListener("order", this);
 }
 
 //==============================================================================
@@ -138,6 +148,10 @@ void OvocoderAudioProcessor::setReleaseCoeff(float releaseInMs) {
     releaseCoeff = std::exp(-1 / releaseInSamples);
 }
 
+void OvocoderAudioProcessor::setFilterOrder(int _order) {
+    order = _order;
+}
+
 void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
     qualityFactor = Q;
     updateFilterCoefficients();
@@ -146,7 +160,7 @@ void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
 void OvocoderAudioProcessor::updateFilterCoefficients() {
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
-            for (int o = 0; o < order; o++) {
+            for (int o = 0; o < MAX_ORDER; o++) {
                 float ratio = static_cast<float>(i) / (numBands - 1);
                 float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
                 Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, qualityFactor);
@@ -164,6 +178,8 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setReleaseCoeff(newValue);
     } else if (parameterID == "q") {
         setFilterQualityFactor(newValue);
+    } else if (parameterID == "order") {
+        setFilterOrder((int)newValue);
     }
 }
 //==============================================================================
@@ -173,6 +189,8 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
 
     setReleaseCoeff(apvts.getRawParameterValue("release")->load());
     setAttackCoeff(apvts.getRawParameterValue("attack")->load());
+    setFilterQualityFactor(apvts.getRawParameterValue("q")->load());
+    setFilterOrder((int)apvts.getRawParameterValue("order")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
