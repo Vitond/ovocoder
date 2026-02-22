@@ -303,7 +303,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         float* mainChannelData = mainBuffer.getWritePointer(channel);
         float* correlationLevelsData = correlationLevels.getWritePointer(channel);
         float* correlationBufferData = correlationBuffer.getWritePointer(channel);
-        float* lagEnergyData         = lagEnergyLevels.getWritePointer(channel);
+        float* lagEnergyData = lagEnergyLevels.getWritePointer(channel);
         
         for (int sample = 0; sample < numSamples; sample++) {
 
