@@ -59,6 +59,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
                      #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                       .withInput  ("UnvoicedInput", juce::AudioChannelSet::stereo(), true)
                        .withInput  ("Sidechain", juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
@@ -286,14 +287,18 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
 
-    juce::AudioBuffer<float> sidechainBuffer = getBusBuffer(buffer, true, 1);
+    juce::AudioBuffer<float> sidechainBuffer = getBusBuffer(buffer, true, 2);
     juce::AudioBuffer<float> mainBuffer = getBusBuffer(buffer, true, 0);
+    juce::AudioBuffer<float> unvoicedBuffer = getBusBuffer(buffer, true, 1);
     int numChannels = mainBuffer.getNumChannels();
     int numSamples = mainBuffer.getNumSamples();
 
     if (sidechainBuffer.getNumChannels() != numChannels) {
         return;
     }
+
+    bool unvoicedBufferActive = unvoicedBuffer.getNumChannels() == numChannels;
+    bool correlationEnabled = true;
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
@@ -305,6 +310,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     {
         float* sidechainChannelData = sidechainBuffer.getWritePointer(channel);
         float* mainChannelData = mainBuffer.getWritePointer(channel);
+        float* unvoicedChannelData = unvoicedBuffer.getWritePointer(channel);
         float* correlationLevelsData = correlationLevels.getWritePointer(channel);
         float* correlationBufferData = correlationBuffer.getWritePointer(channel);
         float* lagEnergyData = lagEnergyLevels.getWritePointer(channel);
@@ -360,15 +366,19 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                     envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * (1.0f - releaseCoeff);
                 }
 
-                float processedMainSample = mainChannelData[sample];
-                for (int o = 0; o < order; o++) {
-                    processedMainSample = mainFilters[channel][band][o].processSample(processedMainSample);
+                float processedSample; 
+                if (correlationEnabled && unvoicedBufferActive) {
+                    processedSample = mainChannelData[sample] * correlation + unvoicedChannelData[sample] * (1 - correlation);
+                } else {
+                    processedSample = mainChannelData[sample];
                 }
-                sumMainSample += processedMainSample * envelopeStates[channel][band];
+                for (int o = 0; o < order; o++) {
+                    processedSample = mainFilters[channel][band][o].processSample(processedSample);
+                }
+                sumMainSample += processedSample * envelopeStates[channel][band];
             }
 
             mainChannelData[sample] = sumMainSample * gain;
-
         }
 
         for (int band = 0; band < numBands; band++) {
