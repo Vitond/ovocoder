@@ -364,6 +364,13 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 correlationValues[channel].store(lastCorrelation[channel]);
             }
 
+            float voicedGain = 1.0f, unvoicedGain = 0.0f;
+            if (correlationEnabled && unvoicedBufferActive) {
+                float angle = lastCorrelation[channel] * juce::MathConstants<float>::halfPi;
+                voicedGain = std::sin(angle);
+                unvoicedGain = std::cos(angle);
+            }
+
             float sumMainSample = 0.0f;
 
             for (int band = 0; band < numBands; band++) {
@@ -380,12 +387,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                     envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * (1.0f - releaseCoeff);
                 }
 
-                float processedSample; 
-                if (correlationEnabled && unvoicedBufferActive) {
-                    processedSample = mainChannelData[sample] * lastCorrelation[channel] + unvoicedChannelData[sample] * (1 - lastCorrelation[channel]);
-                } else {
-                    processedSample = mainChannelData[sample];
-                }
+                float processedSample = mainChannelData[sample] * voicedGain + unvoicedChannelData[sample] * unvoicedGain;
                 for (int o = 0; o < order; o++) {
                     processedSample = mainFilters[channel][band][o].processSample(processedSample);
                 }
