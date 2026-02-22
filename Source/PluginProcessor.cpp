@@ -336,7 +336,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
                 correlationBufferData[correlationBufferPointer] = sidechainChannelData[sample];
                 correlationBufferPointers[channel] = ((correlationBufferPointer + 1) % correlationBufferSize);
-                correlation = maxCorrelation;
+                correlation = juce::jlimit(0.0f, 1.0f, maxCorrelation);
                 correlationValues[channel].store(correlation);
             }
 
