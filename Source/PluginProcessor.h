@@ -110,9 +110,9 @@ private:
 
     juce::AudioBuffer<float> correlationBuffer;
     int correlationBufferPointers[numChannels] = {0, 0};
-    float delayedWindowEnergyLevels[numChannels] = {0.0f, 0.0f};
     float currentWindowEnergyLevels[numChannels] = {0.0f, 0.0f};
     juce::AudioBuffer<float> correlationLevels;
+    juce::AudioBuffer<float> lagEnergyLevels;
 
     int minLag, maxLag, correlationBufferSize;
     std::atomic<float> correlationValues[2] = {0.0f, 0.0f};

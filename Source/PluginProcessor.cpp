@@ -228,8 +228,10 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
 
     correlationBuffer = juce::AudioBuffer<float>(numChannels, correlationBufferSize);
     correlationLevels = juce::AudioBuffer<float>(numChannels, maxLag - minLag + 1);
+    lagEnergyLevels = juce::AudioBuffer<float>(numChannels, maxLag - minLag + 1);
     correlationBuffer.clear();
     correlationLevels.clear();
+    lagEnergyLevels.clear();
 
     updateFilterCoefficients();
 
@@ -301,39 +303,40 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         float* mainChannelData = mainBuffer.getWritePointer(channel);
         float* correlationLevelsData = correlationLevels.getWritePointer(channel);
         float* correlationBufferData = correlationBuffer.getWritePointer(channel);
+        float* lagEnergyData         = lagEnergyLevels.getWritePointer(channel);
         
         for (int sample = 0; sample < numSamples; sample++) {
 
             float correlation = 0;
             if (sample % AUTOCORRELATION_DOWNSAMPLE == 0) {
                 int correlationBufferPointer = correlationBufferPointers[channel];
-                int delayedWindowStartSample = (correlationBufferPointer - minLag + correlationBufferSize) % correlationBufferSize;
-                int delayedWindowEndSample = (correlationBufferPointer - maxLag + correlationBufferSize) % correlationBufferSize;
-                int currentWindowEndSample =  (correlationBufferPointer - (maxLag - minLag) + correlationBufferSize) % correlationBufferSize;
-                delayedWindowEnergyLevels[channel] += correlationBufferData[delayedWindowStartSample] * correlationBufferData[delayedWindowStartSample];
-                delayedWindowEnergyLevels[channel] -= correlationBufferData[delayedWindowEndSample] * correlationBufferData[delayedWindowEndSample];
+                int currentWindowEndSample = (correlationBufferPointer - (maxLag - minLag) + correlationBufferSize) % correlationBufferSize;
                 currentWindowEnergyLevels[channel] += sidechainChannelData[sample] * sidechainChannelData[sample];
                 currentWindowEnergyLevels[channel] -= correlationBufferData[currentWindowEndSample] * correlationBufferData[currentWindowEndSample];
 
                 float maxCorrelation = 0;
-                for (int lag = minLag; lag <= maxLag; lag++) {               
+                for (int lag = minLag; lag <= maxLag; lag++) {
                     int lagSample = (correlationBufferPointer - lag + correlationBufferSize) % correlationBufferSize;
                     int currentWindowEndLagSample = (correlationBufferPointer - (maxLag - minLag) - lag + correlationBufferSize) % correlationBufferSize;
                     correlationLevelsData[lag - minLag] += sidechainChannelData[sample] * correlationBufferData[lagSample];
                     correlationLevelsData[lag - minLag] -= correlationBufferData[currentWindowEndSample] * correlationBufferData[currentWindowEndLagSample];
-                    if (std::abs(correlationLevelsData[lag - minLag]) > maxCorrelation) {
-                        maxCorrelation = std::abs(correlationLevelsData[lag - minLag]);
+                    lagEnergyData[lag - minLag] += correlationBufferData[lagSample] * correlationBufferData[lagSample];
+                    lagEnergyData[lag - minLag] -= correlationBufferData[currentWindowEndLagSample] * correlationBufferData[currentWindowEndLagSample];
+                    float energy = currentWindowEnergyLevels[channel] * lagEnergyData[lag - minLag];
+                    float lagCorrelation;
+                    if (energy > 1e-10f) {
+                        lagCorrelation = std::abs(correlationLevelsData[lag - minLag]) / std::sqrt(energy);
+                    } else {
+                        lagCorrelation = 0.0f;
+                    }
+                    if (lagCorrelation > maxCorrelation) {
+                        maxCorrelation = lagCorrelation;
                     }
                 }
 
                 correlationBufferData[correlationBufferPointer] = sidechainChannelData[sample];
                 correlationBufferPointers[channel] = ((correlationBufferPointer + 1) % correlationBufferSize);
-                if (currentWindowEnergyLevels[channel] * delayedWindowEnergyLevels[channel] > 1e-10f)  {
-                    correlation = maxCorrelation / sqrt(currentWindowEnergyLevels[channel] * delayedWindowEnergyLevels[channel]);
-                } else {
-                    correlation = 0.f;
-                }
-
+                correlation = maxCorrelation;
                 correlationValues[channel].store(correlation);
             }
 
