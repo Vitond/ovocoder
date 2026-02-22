@@ -56,5 +56,6 @@ private:
       releaseLabel,
       filterQualityLabel,
       filterOrderLabel,
-      outputGainLabel;
+      outputGainLabel,
+      correlationLabel;
 };

@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 
 #define MAX_ORDER 8
+#define AUTOCORRELATION_DOWNSAMPLE 8
 //==============================================================================
 /**
 */
@@ -56,6 +57,7 @@ public:
 
     //==============================================================================
     float getEnvelopeValue(int channel, int band) const { return envelopeValues[channel][band].load(); }
+    float getCorrelationValue(int channel) const {return correlationValues[channel].load();}
 
     static constexpr int numBands = 12;
     static constexpr int numChannels = 2;
@@ -101,4 +103,17 @@ private:
     int order = 2;
 
     float gain = 1.0;
+
+    // Autocorrelation
+    float minFundamentalFreq = 60.0; 
+    float maxFundamentalFreq = 400.0;
+
+    juce::AudioBuffer<float> correlationBuffer;
+    int correlationBufferPointers[numChannels] = {0, 0};
+    float delayedWindowEnergyLevels[numChannels] = {0.0f, 0.0f};
+    float currentWindowEnergyLevels[numChannels] = {0.0f, 0.0f};
+    juce::AudioBuffer<float> correlationLevels;
+
+    int minLag, maxLag, correlationBufferSize;
+    std::atomic<float> correlationValues[2] = {0.0f, 0.0f};
 };

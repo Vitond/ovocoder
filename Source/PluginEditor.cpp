@@ -68,12 +68,13 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setBounds(300, 40, 80, 80);
     outputGainSlider.setBounds(400, 40, 80, 80);
 
-
     attackLabel.setText("Attack", juce::NotificationType::dontSendNotification);
     releaseLabel.setText("Release", juce::NotificationType::dontSendNotification);
     filterQualityLabel.setText("Q", juce::NotificationType::dontSendNotification);
     filterOrderLabel.setText("Order", juce::NotificationType::dontSendNotification);
     outputGainLabel.setText("Output gain", juce::NotificationType::dontSendNotification);
+    correlationLabel.setText("Correlation", juce::NotificationType::dontSendNotification);
+    correlationLabel.setBounds(0, 120, 80, 40);
 
     attackLabel.attachToComponent(&attackSlider, false);
     releaseLabel.attachToComponent(&releaseSlider, false);
@@ -86,6 +87,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(filterQualityLabel);
     addAndMakeVisible(filterOrderLabel);
     addAndMakeVisible(outputGainLabel);
+    addAndMakeVisible(correlationLabel);
 }
 
 OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()
@@ -116,6 +118,12 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
       int height = 500 * bandEnvelopes[0][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
     }
+
+    int correlationWidth = bounds.getWidth() * audioProcessor.getCorrelationValue(0);
+    g.setColour(juce::Colours::black);
+    g.fillRect(0, 150, bounds.getWidth() / 4, 20);
+    g.setColour(mainColour);
+    g.fillRect(0, 150, correlationWidth / 4, 20);
 }
 
 void OvocoderAudioProcessorEditor::resized()
