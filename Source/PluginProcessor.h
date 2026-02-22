@@ -120,6 +120,8 @@ private:
     std::atomic<float> correlationValues[2] = {0.0f, 0.0f};
     float lastCorrelation[2] = {0.0f, 0.0f};
 
-    float correlationReleaseInMs = 1.0f;
-    float correlationAttackInMs = 1.0f;
+    float correlationReleaseInMs = 5.0f;
+    float correlationAttackInMs = 5.0f;
+
+    Filter correlationDownsampleFilters[2];
 };

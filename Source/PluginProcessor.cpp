@@ -182,6 +182,8 @@ void OvocoderAudioProcessor::updateFilterCoefficients() {
                 mainFilters[channel][i][o].coefficients = coefficients;
             }
         }
+        Coefficients::Ptr coefficients = Coefficients::makeLowPass(sampleRate, maxFundamentalFreq);
+        correlationDownsampleFilters[channel].coefficients = coefficients;
     }
 }
 
@@ -221,6 +223,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
                 mainFilters[channel][i][j].prepare(spec);
             }
         }
+        correlationDownsampleFilters[channel].prepare(spec);
     }    
 
     maxLag = static_cast<int>(sampleRate / (minFundamentalFreq * AUTOCORRELATION_DOWNSAMPLE));
@@ -324,17 +327,18 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
         for (int sample = 0; sample < numSamples; sample++) {
 
             float correlation = 0;
+            float filteredSample = correlationDownsampleFilters[channel].processSample(sidechainChannelData[sample]);
             if (sample % AUTOCORRELATION_DOWNSAMPLE == 0) {
                 int correlationBufferPointer = correlationBufferPointers[channel];
                 int currentWindowEndSample = (correlationBufferPointer - (maxLag - minLag) + correlationBufferSize) % correlationBufferSize;
-                currentWindowEnergyLevels[channel] += sidechainChannelData[sample] * sidechainChannelData[sample];
+                currentWindowEnergyLevels[channel] += filteredSample * filteredSample;
                 currentWindowEnergyLevels[channel] -= correlationBufferData[currentWindowEndSample] * correlationBufferData[currentWindowEndSample];
 
                 float maxCorrelation = 0;
                 for (int lag = minLag; lag <= maxLag; lag++) {
                     int lagSample = (correlationBufferPointer - lag + correlationBufferSize) % correlationBufferSize;
                     int currentWindowEndLagSample = (correlationBufferPointer - (maxLag - minLag) - lag + correlationBufferSize) % correlationBufferSize;
-                    correlationLevelsData[lag - minLag] += sidechainChannelData[sample] * correlationBufferData[lagSample];
+                    correlationLevelsData[lag - minLag] += filteredSample * correlationBufferData[lagSample];
                     correlationLevelsData[lag - minLag] -= correlationBufferData[currentWindowEndSample] * correlationBufferData[currentWindowEndLagSample];
                     lagEnergyData[lag - minLag] += correlationBufferData[lagSample] * correlationBufferData[lagSample];
                     lagEnergyData[lag - minLag] -= correlationBufferData[currentWindowEndLagSample] * correlationBufferData[currentWindowEndLagSample];
@@ -350,7 +354,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                     }
                 }
 
-                correlationBufferData[correlationBufferPointer] = sidechainChannelData[sample];
+                correlationBufferData[correlationBufferPointer] = filteredSample;
                 correlationBufferPointers[channel] = ((correlationBufferPointer + 1) % correlationBufferSize);
 
                 correlation = juce::jlimit(0.0f, 1.0f, maxCorrelation);
