@@ -238,6 +238,12 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
 
     processBuffer.setSize(numChannels, samplesPerBlock);
     outputBuffer.setSize(numChannels, samplesPerBlock);
+
+    float correlationReleaseInSamples = correlationReleaseInMs * sampleRate / 1000;
+    correlationReleaseCoeff = std::exp(-1 / correlationReleaseInSamples);
+
+    float correlationAttackInSamples = correlationAttackInMs * sampleRate / 1000;
+    correlationAttackCoeff = std::exp(-1 / correlationAttackInSamples);
 }
 
 void OvocoderAudioProcessor::releaseResources()
@@ -346,8 +352,16 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
                 correlationBufferData[correlationBufferPointer] = sidechainChannelData[sample];
                 correlationBufferPointers[channel] = ((correlationBufferPointer + 1) % correlationBufferSize);
+
                 correlation = juce::jlimit(0.0f, 1.0f, maxCorrelation);
-                correlationValues[channel].store(correlation);
+
+                if (correlation > lastCorrelation[channel]) {
+                    lastCorrelation[channel] += (correlation - lastCorrelation[channel]) * (1 - correlationAttackCoeff);
+                } else {
+                    lastCorrelation[channel] += (correlation - lastCorrelation[channel]) * (1 - correlationReleaseCoeff);
+                }
+                
+                correlationValues[channel].store(lastCorrelation[channel]);
             }
 
             float sumMainSample = 0.0f;
@@ -368,7 +382,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
                 float processedSample; 
                 if (correlationEnabled && unvoicedBufferActive) {
-                    processedSample = mainChannelData[sample] * correlation + unvoicedChannelData[sample] * (1 - correlation);
+                    processedSample = mainChannelData[sample] * lastCorrelation[channel] + unvoicedChannelData[sample] * (1 - lastCorrelation[channel]);
                 } else {
                     processedSample = mainChannelData[sample];
                 }

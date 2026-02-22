@@ -70,6 +70,8 @@ private:
     float envelopeStates[2][numBands] = {0.0f, 0.0f};
     float attackCoeff = 0.0f;
     float releaseCoeff = 0.0f;
+    float correlationAttackCoeff = 0.0f;
+    float correlationReleaseCoeff = 0.0f;
     std::atomic<float> envelopeValues[2][numBands] = {0.0f, 0.0f};
 
     using Filter = juce::dsp::IIR::Filter<float>;
@@ -116,4 +118,8 @@ private:
 
     int minLag, maxLag, correlationBufferSize;
     std::atomic<float> correlationValues[2] = {0.0f, 0.0f};
+    float lastCorrelation[2] = {0.0f, 0.0f};
+
+    float correlationReleaseInMs = 1.0f;
+    float correlationAttackInMs = 1.0f;
 };
