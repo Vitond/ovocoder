@@ -30,12 +30,19 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     setSize (800, 400);
     startTimer(16);
 
+    displayedChannelButton.setButtonText("R");
+    displayedChannelButton.onClick = [this] {
+      displayedChannel = 1 - displayedChannel;
+      displayedChannelButton.setButtonText( displayedChannel == 0 ? "L" : "R");
+    };
+
     addAndMakeVisible(attackSlider);
     addAndMakeVisible(releaseSlider);
     addAndMakeVisible(filterQualitySlider);
     addAndMakeVisible(filterOrderSlider);
     addAndMakeVisible(outputGainSlider);
     addAndMakeVisible(correlationEnabledButton);
+    addAndMakeVisible(displayedChannelButton);
 
     attackSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     releaseSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
@@ -70,6 +77,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setBounds(300, 40, 80, 80);
     outputGainSlider.setBounds(400, 40, 80, 80);
     correlationEnabledButton.setBounds(200, 165, 200, 30);
+    displayedChannelButton.setBounds(getLocalBounds().removeFromRight(40).removeFromTop(40));
 
     attackLabel.setText("Attack", juce::NotificationType::dontSendNotification);
     releaseLabel.setText("Release", juce::NotificationType::dontSendNotification);
@@ -121,11 +129,11 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
     int gap = 10;
     int barWidth = (bounds.getWidth() - (OvocoderAudioProcessor::numBands - 1) * gap) / OvocoderAudioProcessor::numBands;
     for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
-      int height = 500 * bandEnvelopes[0][i];
+      int height = 500 * bandEnvelopes[displayedChannel][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
     }
 
-    int correlationWidth = bounds.getWidth() * audioProcessor.getCorrelationValue(0);
+    int correlationWidth = bounds.getWidth() * audioProcessor.getCorrelationValue(displayedChannel);
     g.setColour(juce::Colours::black);
     g.fillRect(0, 170, bounds.getWidth() / 4, 20);
     g.setColour(mainColour);

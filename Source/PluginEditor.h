@@ -63,4 +63,8 @@ private:
       outputGainLabel,
       correlationLabel,
       correlationEnabledButtonLabel;
+
+    int displayedChannel = 0;
+
+    juce::TextButton displayedChannelButton;
 };
