@@ -357,7 +357,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 correlationBufferData[correlationBufferPointer] = filteredSample;
                 correlationBufferPointers[channel] = ((correlationBufferPointer + 1) % correlationBufferSize);
 
-                correlation = juce::jlimit(0.0f, 1.0f, (maxCorrelation - 0.5f) * 2);
+                correlation = std::pow(juce::jlimit(0.0f, 1.0f, (maxCorrelation - 0.5f) * 2), 2.0f);
 
                 if (correlation > lastCorrelation[channel]) {
                     lastCorrelation[channel] += (correlation - lastCorrelation[channel]) * (1 - correlationAttackCoeff);
