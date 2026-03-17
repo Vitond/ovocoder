@@ -48,6 +48,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "Output gain", 
             juce::NormalisableRange(0.0f, 40.0f, 0.1f),
             0.0f
+        ),
+        std::make_unique<juce::AudioParameterBool>
+        (
+            "correlation_enabled",
+            "Correlation enabled",
+            false
         )
     );
     return parameterLayout;
@@ -75,6 +81,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("q", this);
     apvts.addParameterListener("order", this);
     apvts.addParameterListener("gain", this);
+    apvts.addParameterListener("correlation_enabled", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -84,6 +91,7 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("q", this);
     apvts.removeParameterListener("order", this);
     apvts.removeParameterListener("gain", this);
+    apvts.removeParameterListener("correlation_enabled", this);
 }
 
 //==============================================================================
@@ -162,6 +170,10 @@ void OvocoderAudioProcessor::setFilterOrder(int _order) {
     order = _order;
 }
 
+void OvocoderAudioProcessor::setCorrelationEnabled(bool _enabled) {
+    correlationEnabled = _enabled;
+}
+
 void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
     qualityFactor = Q;
     updateFilterCoefficients();
@@ -198,6 +210,8 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setFilterOrder((int)newValue);
     } else if (parameterID == "gain") {
         setOutputGain(newValue);
+    } else if (parameterID == "correlation_enabled") {
+        setCorrelationEnabled((bool)newValue);
     }
 }
 //==============================================================================
@@ -210,6 +224,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     setFilterQualityFactor(apvts.getRawParameterValue("q")->load());
     setFilterOrder((int)apvts.getRawParameterValue("order")->load());
     setOutputGain(apvts.getRawParameterValue("gain")->load());
+    setCorrelationEnabled(apvts.getRawParameterValue("correlation_enabled")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -307,7 +322,6 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
     }
 
     bool unvoicedBufferActive = unvoicedBuffer.getNumChannels() == numChannels;
-    bool correlationEnabled = true;
 
     // This is the place where you'd normally do the guts of your plugin's
     // audio processing...
@@ -328,7 +342,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
             float correlation = 0;
             float filteredSample = correlationDownsampleFilters[channel].processSample(sidechainChannelData[sample]);
-            if (sample % AUTOCORRELATION_DOWNSAMPLE == 0) {
+            if (correlationEnabled && (sample % AUTOCORRELATION_DOWNSAMPLE == 0)) {
                 int correlationBufferPointer = correlationBufferPointers[channel];
                 int currentWindowEndSample = (correlationBufferPointer - (maxLag - minLag) + correlationBufferSize) % correlationBufferSize;
                 currentWindowEnergyLevels[channel] += filteredSample * filteredSample;

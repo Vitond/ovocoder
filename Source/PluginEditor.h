@@ -42,6 +42,8 @@ private:
       filterOrderSlider,
       outputGainSlider;
 
+    juce::ToggleButton correlationEnabledButton;
+
     juce::Colour mainColour = juce::Colour(200, 200, 66);
 
     juce::AudioProcessorValueTreeState::SliderAttachment 
@@ -51,11 +53,14 @@ private:
       filterOrderSliderAttachment,
       outputGainSliderAttachment;
 
+    juce::AudioProcessorValueTreeState::ButtonAttachment correlationEnabledButtonAttachment;
+
     juce::Label 
       attackLabel,
       releaseLabel,
       filterQualityLabel,
       filterOrderLabel,
       outputGainLabel,
-      correlationLabel;
+      correlationLabel,
+      correlationEnabledButtonLabel;
 };

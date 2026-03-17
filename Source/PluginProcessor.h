@@ -90,6 +90,7 @@ private:
     void setFilterQualityFactor(float Q);
     void setFilterOrder(int order);
     void setOutputGain(float gainInDb);
+    void setCorrelationEnabled(bool enabled);
 
     void updateFilterCoefficients();
 
@@ -124,4 +125,6 @@ private:
     float correlationAttackInMs = 5.0f;
 
     Filter correlationDownsampleFilters[2];
+
+    bool correlationEnabled = false;
 };

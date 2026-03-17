@@ -16,7 +16,8 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     releaseSliderAttachment(audioProcessor.apvts, "release", releaseSlider),
     filterQualitySliderAttachment(audioProcessor.apvts, "q", filterQualitySlider),
     filterOrderSliderAttachment(audioProcessor.apvts, "order", filterOrderSlider),
-    outputGainSliderAttachment(audioProcessor.apvts, "gain", outputGainSlider)
+    outputGainSliderAttachment(audioProcessor.apvts, "gain", outputGainSlider),
+    correlationEnabledButtonAttachment(audioProcessor.apvts, "correlation_enabled", correlationEnabledButton)
 {
 
     for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
@@ -34,6 +35,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(filterQualitySlider);
     addAndMakeVisible(filterOrderSlider);
     addAndMakeVisible(outputGainSlider);
+    addAndMakeVisible(correlationEnabledButton);
 
     attackSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
     releaseSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
@@ -67,6 +69,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterQualitySlider.setBounds(200, 40, 80, 80);
     filterOrderSlider.setBounds(300, 40, 80, 80);
     outputGainSlider.setBounds(400, 40, 80, 80);
+    correlationEnabledButton.setBounds(200, 165, 200, 30);
 
     attackLabel.setText("Attack", juce::NotificationType::dontSendNotification);
     releaseLabel.setText("Release", juce::NotificationType::dontSendNotification);
@@ -74,13 +77,15 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderLabel.setText("Order", juce::NotificationType::dontSendNotification);
     outputGainLabel.setText("Output gain", juce::NotificationType::dontSendNotification);
     correlationLabel.setText("Correlation", juce::NotificationType::dontSendNotification);
-    correlationLabel.setBounds(0, 120, 80, 40);
+    correlationLabel.setBounds(0, 132, 80, 40);
+    correlationEnabledButtonLabel.setText("Correlation enabled", juce::NotificationType::dontSendNotification);
 
     attackLabel.attachToComponent(&attackSlider, false);
     releaseLabel.attachToComponent(&releaseSlider, false);
     filterQualityLabel.attachToComponent(&filterQualitySlider, false);
     filterOrderLabel.attachToComponent(&filterOrderSlider, false);
     outputGainLabel.attachToComponent(&outputGainSlider, false);
+    correlationEnabledButtonLabel.attachToComponent(&correlationEnabledButton, false);
 
     addAndMakeVisible(attackLabel);
     addAndMakeVisible(releaseLabel);
@@ -88,6 +93,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(filterOrderLabel);
     addAndMakeVisible(outputGainLabel);
     addAndMakeVisible(correlationLabel);
+    addAndMakeVisible(correlationEnabledButtonLabel);
 }
 
 OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()
@@ -121,9 +127,9 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
 
     int correlationWidth = bounds.getWidth() * audioProcessor.getCorrelationValue(0);
     g.setColour(juce::Colours::black);
-    g.fillRect(0, 150, bounds.getWidth() / 4, 20);
+    g.fillRect(0, 170, bounds.getWidth() / 4, 20);
     g.setColour(mainColour);
-    g.fillRect(0, 150, correlationWidth / 4, 20);
+    g.fillRect(0, 170, correlationWidth / 4, 20);
 }
 
 void OvocoderAudioProcessorEditor::resized()
