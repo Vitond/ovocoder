@@ -32,6 +32,8 @@ private:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessorEditor)
 
     float bandEnvelopes[2][OvocoderAudioProcessor::numBands];
+    float mainBandEnvelopes[2][OvocoderAudioProcessor::numBands];
+    float outputBandEnvelopes[2][OvocoderAudioProcessor::numBands];
 
     void timerCallback() override;
 

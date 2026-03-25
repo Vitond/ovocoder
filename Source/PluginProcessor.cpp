@@ -409,7 +409,26 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 for (int o = 0; o < order; o++) {
                     processedSample = mainFilters[channel][band][o].processSample(processedSample);
                 }
-                sumMainSample += processedSample * envelopeStates[channel][band];
+
+                float absoluteProcessedSample = std::abs(processedSample);
+                float mainEnvelopeState = mainInputEnvelopeStates[channel][band];
+                if (absoluteProcessedSample > mainEnvelopeState) {
+                    mainInputEnvelopeStates[channel][band] += (absoluteProcessedSample - mainEnvelopeState) * (1.0f - attackCoeff);
+                } else {
+                    mainInputEnvelopeStates[channel][band] -= (mainEnvelopeState - absoluteProcessedSample) * (1.0f - releaseCoeff);
+                }
+
+                float appliedEnvelopeSample = processedSample * envelopeStates[channel][band];
+                float absoluteAppliedEnvelopeSample = std::abs(appliedEnvelopeSample);
+
+                float outputEnvelopeState = outputEnvelopeStates[channel][band];
+                if (absoluteAppliedEnvelopeSample > outputEnvelopeState) {
+                    outputEnvelopeStates[channel][band] += (absoluteAppliedEnvelopeSample - outputEnvelopeState) * (1.0f - attackCoeff);
+                } else {
+                    outputEnvelopeStates[channel][band] -= (outputEnvelopeState - absoluteAppliedEnvelopeSample) * (1.0f - releaseCoeff);
+                }
+
+                sumMainSample += appliedEnvelopeSample;
             }
 
             mainChannelData[sample] = sumMainSample * gain;
@@ -417,6 +436,8 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
         for (int band = 0; band < numBands; band++) {
             envelopeValues[channel][band].store(envelopeStates[channel][band]);
+            mainInputEnvelopeValues[channel][band].store(mainInputEnvelopeStates[channel][band]);
+            outputEnvelopeValues[channel][band].store(outputEnvelopeStates[channel][band]);
         }
     }
 

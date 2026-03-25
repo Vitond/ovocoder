@@ -58,6 +58,8 @@ public:
     //==============================================================================
     float getEnvelopeValue(int channel, int band) const { return envelopeValues[channel][band].load(); }
     float getCorrelationValue(int channel) const {return correlationValues[channel].load();}
+    float getMainInputEnvelopeValue(int channel, int band) const { return mainInputEnvelopeValues[channel][band].load(); }
+    float getOutputEnvelopeValue(int channel, int band) const { return outputEnvelopeValues[channel][band].load(); }
 
     static constexpr int numBands = 12;
     static constexpr int numChannels = 2;
@@ -127,4 +129,10 @@ private:
     Filter correlationDownsampleFilters[2];
 
     bool correlationEnabled = false;
+
+    float mainInputEnvelopeStates[2][numBands] = {0.0f, 0.0f};
+    std::atomic<float> mainInputEnvelopeValues[2][numBands] = {0.0f, 0.0f};
+
+    float outputEnvelopeStates[2][numBands] = {0.0f, 0.0f};
+    std::atomic<float> outputEnvelopeValues[2][numBands] = {0.0f, 0.0f};
 };

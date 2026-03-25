@@ -27,8 +27,8 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     }
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
-    setSize (800, 400);
-    startTimer(16);
+    setSize (800, 600);
+    startTimer(32);
 
     displayedChannelButton.setButtonText("R");
     displayedChannelButton.onClick = [this] {
@@ -112,6 +112,8 @@ void OvocoderAudioProcessorEditor::timerCallback() {
   for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
     for (int band = 0; band < OvocoderAudioProcessor::numBands; band++) {
       bandEnvelopes[channel][band] = audioProcessor.getEnvelopeValue(channel, band);
+      mainBandEnvelopes[channel][band] = audioProcessor.getMainInputEnvelopeValue(channel, band);
+      outputBandEnvelopes[channel][band] = audioProcessor.getOutputEnvelopeValue(channel, band);
     }
   }
 
@@ -128,9 +130,24 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
     juce::Rectangle<int> bounds = getLocalBounds();
     int gap = 10;
     int barWidth = (bounds.getWidth() - (OvocoderAudioProcessor::numBands - 1) * gap) / OvocoderAudioProcessor::numBands;
+
     for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
-      int height = 500 * bandEnvelopes[displayedChannel][i];
+      int height = 400 * mainBandEnvelopes[displayedChannel][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
+    }
+
+    g.setColour(juce::Colour(58, 165, 70));
+
+    for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
+      int height = 400 * outputBandEnvelopes[displayedChannel][i];
+      g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
+    }
+
+    g.setColour(juce::Colour(58, 165, 170));
+    
+    for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
+      int height = 400 * bandEnvelopes[displayedChannel][i];
+      g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, 10);
     }
 
     int correlationWidth = bounds.getWidth() * audioProcessor.getCorrelationValue(displayedChannel);
