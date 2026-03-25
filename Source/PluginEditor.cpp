@@ -136,14 +136,14 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
     }
 
-    g.setColour(juce::Colour(58, 165, 70));
+    g.setColour(outputColour);
 
     for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
       int height = 400 * outputBandEnvelopes[displayedChannel][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
     }
 
-    g.setColour(juce::Colour(58, 165, 170));
+    g.setColour(sidechainColour);
     
     for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
       int height = 400 * bandEnvelopes[displayedChannel][i];
@@ -155,6 +155,26 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
     g.fillRect(0, 170, bounds.getWidth() / 4, 20);
     g.setColour(mainColour);
     g.fillRect(0, 170, correlationWidth / 4, 20);
+
+    
+    juce::Rectangle<int> legendSection = getLocalBounds().removeFromRight(200);
+    legendSection.removeFromTop(100);
+    legendSection.removeFromBottom(300);
+
+    g.setColour(mainColour);
+    g.fillRect(legendSection.getX(), legendSection.getY(), legendRectSize, legendRectSize);
+    g.setColour(juce::Colours::white);
+    g.drawText("Input", legendSection.getX() + legendRectSize + legendRectTextGap, legendSection.getY(), legendTextWidth, legendRectSize, juce::Justification::left);
+
+    g.setColour(sidechainColour);
+    g.fillRect(legendSection.getX(), legendSection.getY() + legendRowGap, legendRectSize, legendRectSize);
+    g.setColour(juce::Colours::white);
+    g.drawText("Sidechain", legendSection.getX() + legendRectSize + legendRectTextGap, legendSection.getY() + legendRowGap, legendTextWidth, legendRectSize, juce::Justification::left);
+
+    g.setColour(outputColour);
+    g.fillRect(legendSection.getX(), legendSection.getY() + 2 * legendRowGap, legendRectSize, legendRectSize);
+    g.setColour(juce::Colours::white);
+    g.drawText("Output", legendSection.getX() + legendRectSize + legendRectTextGap, legendSection.getY() + 2 * legendRowGap, legendTextWidth, legendRectSize, juce::Justification::left);
 }
 
 void OvocoderAudioProcessorEditor::resized()

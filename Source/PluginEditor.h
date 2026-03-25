@@ -47,6 +47,8 @@ private:
     juce::ToggleButton correlationEnabledButton;
 
     juce::Colour mainColour = juce::Colour(200, 200, 66);
+    juce::Colour sidechainColour = juce::Colour(58, 165, 170);
+    juce::Colour outputColour = juce::Colour(58, 165, 70);
 
     juce::AudioProcessorValueTreeState::SliderAttachment 
       attackSliderAttachment,
@@ -69,4 +71,9 @@ private:
     int displayedChannel = 0;
 
     juce::TextButton displayedChannelButton;
+
+    int legendRectSize = 30;
+    int legendRectTextGap = 10;
+    int legendTextWidth = 100;
+    int legendRowGap = legendRectSize + 5;
 };
