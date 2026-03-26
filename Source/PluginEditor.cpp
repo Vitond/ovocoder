@@ -44,11 +44,11 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(correlationEnabledButton);
     addAndMakeVisible(displayedChannelButton);
 
-    attackSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    releaseSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    filterQualitySlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    filterOrderSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
-    outputGainSlider.setSliderStyle(juce::Slider::SliderStyle::Rotary);
+    attackSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+    releaseSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+    filterQualitySlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+    filterOrderSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+    outputGainSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
 
     attackSlider.setNumDecimalPlacesToDisplay(2);
     releaseSlider.setNumDecimalPlacesToDisplay(2);
