@@ -15,7 +15,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "attack", 
             "Attack", 
-            juce::NormalisableRange(0.1f, 100.0f, 0.1f),
+            juce::NormalisableRange(0.1f, 100.0f, 0.1f, 0.2f),
             5.0f,
             juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
         ),
@@ -23,7 +23,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "release", 
             "Release", 
-            juce::NormalisableRange(1.0f, 500.0f, 0.1f),
+            juce::NormalisableRange(1.0f, 500.0f, 0.1f, 0.2f),
             20.0f,
             juce::RangedAudioParameterAttributes<juce::AudioParameterFloatAttributes, float>().withLabel("ms")
         ),
@@ -31,7 +31,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "q", 
             "Q", 
-            juce::NormalisableRange(0.5f, 20.0f, 0.1f),
+            juce::NormalisableRange(0.5f, 20.0f, 0.1f, 0.2f),
             0.7071f
         ),
         std::make_unique<juce::AudioParameterInt>
@@ -46,7 +46,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "gain", 
             "Output gain", 
-            juce::NormalisableRange(0.0f, 40.0f, 0.1f),
+            juce::NormalisableRange(0.0f, 40.0f, 0.1f, 0.2f),
             0.0f
         ),
         std::make_unique<juce::AudioParameterBool>
