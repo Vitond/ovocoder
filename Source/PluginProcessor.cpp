@@ -31,7 +31,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "q", 
             "Q", 
-            juce::NormalisableRange(0.5f, 20.0f, 0.1f, 0.2f),
+            juce::NormalisableRange(0.5f, 20.0f, 0.01f, 0.2f),
             0.7071f
         ),
         std::make_unique<juce::AudioParameterInt>
@@ -42,11 +42,19 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             8,
             2
         ),
+        std::make_unique<juce::AudioParameterInt>
+        (
+            "num_bands", 
+            "Bands", 
+            3,
+            64,
+            8
+        ),
         std::make_unique<juce::AudioParameterFloat>
         (
             "gain", 
             "Output gain", 
-            juce::NormalisableRange(0.0f, 40.0f, 0.1f, 0.2f),
+            juce::NormalisableRange(0.0f, 40.0f, 0.01f, 0.2f),
             0.0f
         ),
         std::make_unique<juce::AudioParameterBool>
@@ -90,6 +98,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("gain", this);
     apvts.addParameterListener("correlation_enabled", this);
     apvts.addParameterListener("mix", this);
+    apvts.addParameterListener("num_bands", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -101,6 +110,7 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("gain", this);
     apvts.removeParameterListener("correlation_enabled", this);
     apvts.removeParameterListener("mix", this);
+    apvts.removeParameterListener("num_bands", this);
 }
 
 //==============================================================================
@@ -165,6 +175,11 @@ void OvocoderAudioProcessor::changeProgramName (int index, const juce::String& n
 {
 }
 
+void OvocoderAudioProcessor::setNumBands(int _numBands) {
+    numBands = _numBands;
+    updateFilterCoefficients();
+}
+
 void OvocoderAudioProcessor::setAttackCoeff(float attackInMs) {
     float attackInSamples = attackInMs * sampleRate / 1000;
     attackCoeff = std::exp(-1 / attackInSamples);
@@ -200,7 +215,12 @@ void OvocoderAudioProcessor::updateFilterCoefficients() {
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
             for (int o = 0; o < MAX_ORDER; o++) {
-                float ratio = static_cast<float>(i) / (numBands - 1);
+                float ratio;
+                if (numBands == 1) {
+                   ratio = 0.0f;
+                } else {
+                   ratio = static_cast<float>(i) / (numBands - 1);
+                }
                 float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
                 Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, qualityFactor);
                 sidechainFilters[channel][i][o].coefficients = coefficients;
@@ -227,6 +247,8 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setCorrelationEnabled((bool)newValue);
     } else if (parameterID == "mix") {
         setMix(newValue);
+    } else if (parameterID == "num_bands") {
+        setNumBands((int)newValue);
     }
 }
 //==============================================================================
@@ -241,6 +263,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     setOutputGain(apvts.getRawParameterValue("gain")->load());
     setCorrelationEnabled(apvts.getRawParameterValue("correlation_enabled")->load());
     setMix(apvts.getRawParameterValue("mix")->load());
+    setNumBands((int)apvts.getRawParameterValue("num_bands")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -248,7 +271,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     spec.numChannels = 1;
 
     for (int channel = 0; channel < numChannels; channel++) {
-        for (int i = 0; i < numBands; i++)  {
+        for (int i = 0; i < MAX_BANDS; i++)  {
             for (int j = 0; j < MAX_ORDER; j++) {
                 sidechainFilters[channel][i][j].prepare(spec);
                 mainFilters[channel][i][j].prepare(spec);

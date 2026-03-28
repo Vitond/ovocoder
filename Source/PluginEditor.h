@@ -31,9 +31,9 @@ private:
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessorEditor)
 
-    float bandEnvelopes[2][OvocoderAudioProcessor::numBands];
-    float mainBandEnvelopes[2][OvocoderAudioProcessor::numBands];
-    float outputBandEnvelopes[2][OvocoderAudioProcessor::numBands];
+    float bandEnvelopes[2][OvocoderAudioProcessor::maxBands];
+    float mainBandEnvelopes[2][OvocoderAudioProcessor::maxBands];
+    float outputBandEnvelopes[2][OvocoderAudioProcessor::maxBands];
 
     void timerCallback() override;
 
@@ -43,7 +43,8 @@ private:
       filterQualitySlider,
       filterOrderSlider,
       outputGainSlider,
-      mixSlider;
+      mixSlider,
+      numBandsSlider;
 
     juce::ToggleButton correlationEnabledButton;
 
@@ -57,7 +58,8 @@ private:
       filterQualitySliderAttachment,
       filterOrderSliderAttachment,
       outputGainSliderAttachment,
-      mixSliderAttachment;
+      mixSliderAttachment,
+      numBandsSliderAttachment;
 
     juce::AudioProcessorValueTreeState::ButtonAttachment correlationEnabledButtonAttachment;
 
@@ -69,7 +71,8 @@ private:
       outputGainLabel,
       correlationLabel,
       correlationEnabledButtonLabel,
-      mixLabel;
+      mixLabel,
+      numBandsLabel;
 
     int displayedChannel = 0;
 

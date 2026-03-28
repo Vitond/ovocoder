@@ -12,6 +12,7 @@
 
 #define MAX_ORDER 8
 #define AUTOCORRELATION_DOWNSAMPLE 8
+#define MAX_BANDS 64
 //==============================================================================
 /**
 */
@@ -60,27 +61,28 @@ public:
     float getCorrelationValue(int channel) const {return correlationValues[channel].load();}
     float getMainInputEnvelopeValue(int channel, int band) const { return mainInputEnvelopeValues[channel][band].load(); }
     float getOutputEnvelopeValue(int channel, int band) const { return outputEnvelopeValues[channel][band].load(); }
+    int getNumBands() const {return numBands; }
 
-    static constexpr int numBands = 12;
     static constexpr int numChannels = 2;
+    static constexpr int maxBands = MAX_BANDS;
 
     juce::AudioProcessorValueTreeState apvts;
 
 private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessor)
-    float envelopeStates[2][numBands] = {0.0f, 0.0f};
+    float envelopeStates[2][MAX_BANDS] = {0.0f, 0.0f};
     float attackCoeff = 0.0f;
     float releaseCoeff = 0.0f;
     float correlationAttackCoeff = 0.0f;
     float correlationReleaseCoeff = 0.0f;
-    std::atomic<float> envelopeValues[2][numBands] = {0.0f, 0.0f};
+    std::atomic<float> envelopeValues[2][MAX_BANDS] = {0.0f, 0.0f};
 
     using Filter = juce::dsp::IIR::Filter<float>;
     using Coefficients = juce::dsp::IIR::Coefficients<float>;
 
-    Filter sidechainFilters[numChannels][numBands][MAX_ORDER];
-    Filter mainFilters[numChannels][numBands][MAX_ORDER];
+    Filter sidechainFilters[numChannels][MAX_BANDS][MAX_ORDER];
+    Filter mainFilters[numChannels][MAX_BANDS][MAX_ORDER];
 
     juce::AudioBuffer<float> processBuffer;
     juce::AudioBuffer<float> outputBuffer;
@@ -93,6 +95,7 @@ private:
     void setFilterOrder(int order);
     void setOutputGain(float gainInDb);
     void setCorrelationEnabled(bool enabled);
+    void setNumBands(int _numBands);
     void setMix(float mix);
 
     void updateFilterCoefficients();
@@ -131,11 +134,13 @@ private:
 
     bool correlationEnabled = false;
 
-    float mainInputEnvelopeStates[2][numBands] = {0.0f, 0.0f};
-    std::atomic<float> mainInputEnvelopeValues[2][numBands] = {0.0f, 0.0f};
+    float mainInputEnvelopeStates[2][MAX_BANDS] = {0.0f, 0.0f};
+    std::atomic<float> mainInputEnvelopeValues[2][MAX_BANDS] = {0.0f, 0.0f};
 
-    float outputEnvelopeStates[2][numBands] = {0.0f, 0.0f};
-    std::atomic<float> outputEnvelopeValues[2][numBands] = {0.0f, 0.0f};
+    float outputEnvelopeStates[2][MAX_BANDS] = {0.0f, 0.0f};
+    std::atomic<float> outputEnvelopeValues[2][MAX_BANDS] = {0.0f, 0.0f};
 
     float mix = 1.0f;
+
+    int numBands = 8;
 };

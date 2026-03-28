@@ -18,11 +18,12 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSliderAttachment(audioProcessor.apvts, "order", filterOrderSlider),
     outputGainSliderAttachment(audioProcessor.apvts, "gain", outputGainSlider),
     correlationEnabledButtonAttachment(audioProcessor.apvts, "correlation_enabled", correlationEnabledButton),
-    mixSliderAttachment(audioProcessor.apvts, "mix", mixSlider)
+    mixSliderAttachment(audioProcessor.apvts, "mix", mixSlider),
+    numBandsSliderAttachment(audioProcessor.apvts, "num_bands", numBandsSlider)
 {
 
     for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
-      for (int band = 0; band < OvocoderAudioProcessor::numBands; band++) {
+      for (int band = 0; band < OvocoderAudioProcessor::maxBands; band++) {
         bandEnvelopes[channel][band] = 0.0f;
       }
     }
@@ -45,6 +46,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(correlationEnabledButton);
     addAndMakeVisible(displayedChannelButton);
     addAndMakeVisible(mixSlider);
+    addAndMakeVisible(numBandsSlider);
 
     attackSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     releaseSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
@@ -52,6 +54,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     outputGainSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     mixSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+    numBandsSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
 
     attackSlider.setNumDecimalPlacesToDisplay(2);
     releaseSlider.setNumDecimalPlacesToDisplay(2);
@@ -65,6 +68,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     outputGainSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     mixSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
+    numBandsSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
 
     attackSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     releaseSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
@@ -72,6 +76,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     outputGainSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     mixSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
+    numBandsSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
 
     attackSlider.setTextValueSuffix("ms");
     releaseSlider.setTextValueSuffix("ms");
@@ -83,6 +88,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setBounds(300, 40, 80, 80);
     outputGainSlider.setBounds(400, 40, 80, 80);
     mixSlider.setBounds(500, 40, 80, 80);
+    numBandsSlider.setBounds(600, 40, 80, 80);
     correlationEnabledButton.setBounds(200, 165, 200, 30);
     displayedChannelButton.setBounds(getLocalBounds().removeFromRight(40).removeFromTop(40));
 
@@ -95,6 +101,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     correlationLabel.setBounds(0, 132, 80, 40);
     correlationEnabledButtonLabel.setText("Correlation enabled", juce::NotificationType::dontSendNotification);
     mixLabel.setText("Mix", juce::NotificationType::dontSendNotification);
+    numBandsLabel.setText("Bands", juce::NotificationType::dontSendNotification);
 
     attackLabel.attachToComponent(&attackSlider, false);
     releaseLabel.attachToComponent(&releaseSlider, false);
@@ -103,6 +110,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     outputGainLabel.attachToComponent(&outputGainSlider, false);
     correlationEnabledButtonLabel.attachToComponent(&correlationEnabledButton, false);
     mixLabel.attachToComponent(&mixSlider, false);
+    numBandsLabel.attachToComponent(&numBandsSlider, false);
 
     addAndMakeVisible(attackLabel);
     addAndMakeVisible(releaseLabel);
@@ -112,6 +120,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(correlationLabel);
     addAndMakeVisible(correlationEnabledButtonLabel);
     addAndMakeVisible(mixLabel);
+    addAndMakeVisible(numBandsLabel);
 }
 
 OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()
@@ -120,7 +129,7 @@ OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()
 
 void OvocoderAudioProcessorEditor::timerCallback() {
   for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
-    for (int band = 0; band < OvocoderAudioProcessor::numBands; band++) {
+    for (int band = 0; band < audioProcessor.getNumBands(); band++) {
       bandEnvelopes[channel][band] = audioProcessor.getEnvelopeValue(channel, band);
       mainBandEnvelopes[channel][band] = audioProcessor.getMainInputEnvelopeValue(channel, band);
       outputBandEnvelopes[channel][band] = audioProcessor.getOutputEnvelopeValue(channel, band);
@@ -137,25 +146,27 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
     g.fillAll (getLookAndFeel().findColour (juce::ResizableWindow::backgroundColourId));
     g.setColour(mainColour);
 
+    int numBands = audioProcessor.getNumBands();
+
     juce::Rectangle<int> bounds = getLocalBounds();
     int gap = 10;
-    int barWidth = (bounds.getWidth() - (OvocoderAudioProcessor::numBands - 1) * gap) / OvocoderAudioProcessor::numBands;
+    int barWidth = (bounds.getWidth() - (numBands - 1) * gap) / numBands;
 
-    for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
+    for (int i = 0; i < numBands; i++) {
       int height = 400 * mainBandEnvelopes[displayedChannel][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
     }
 
     g.setColour(outputColour);
 
-    for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
+    for (int i = 0; i < numBands; i++) {
       int height = 400 * outputBandEnvelopes[displayedChannel][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, height);
     }
 
     g.setColour(sidechainColour);
     
-    for (int i = 0; i < OvocoderAudioProcessor::numBands; i++) {
+    for (int i = 0; i < numBands; i++) {
       int height = 400 * bandEnvelopes[displayedChannel][i];
       g.fillRect(i * barWidth + (i > 0 ? i : 0) * gap, bounds.getHeight() - height, barWidth, 10);
     }
@@ -168,7 +179,7 @@ void OvocoderAudioProcessorEditor::paint (juce::Graphics& g)
 
     
     juce::Rectangle<int> legendSection = getLocalBounds().removeFromRight(200);
-    legendSection.removeFromTop(100);
+    legendSection.removeFromTop(200);
     legendSection.removeFromBottom(300);
 
     g.setColour(mainColour);
