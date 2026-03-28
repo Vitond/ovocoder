@@ -17,7 +17,8 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterQualitySliderAttachment(audioProcessor.apvts, "q", filterQualitySlider),
     filterOrderSliderAttachment(audioProcessor.apvts, "order", filterOrderSlider),
     outputGainSliderAttachment(audioProcessor.apvts, "gain", outputGainSlider),
-    correlationEnabledButtonAttachment(audioProcessor.apvts, "correlation_enabled", correlationEnabledButton)
+    correlationEnabledButtonAttachment(audioProcessor.apvts, "correlation_enabled", correlationEnabledButton),
+    mixSliderAttachment(audioProcessor.apvts, "mix", mixSlider)
 {
 
     for (int channel = 0; channel < OvocoderAudioProcessor::numChannels; channel++) {
@@ -30,7 +31,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     setSize (800, 600);
     startTimer(32);
 
-    displayedChannelButton.setButtonText("R");
+    displayedChannelButton.setButtonText("L");
     displayedChannelButton.onClick = [this] {
       displayedChannel = 1 - displayedChannel;
       displayedChannelButton.setButtonText( displayedChannel == 0 ? "L" : "R");
@@ -43,29 +44,34 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(outputGainSlider);
     addAndMakeVisible(correlationEnabledButton);
     addAndMakeVisible(displayedChannelButton);
+    addAndMakeVisible(mixSlider);
 
     attackSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     releaseSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     filterQualitySlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     filterOrderSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
     outputGainSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
+    mixSlider.setSliderStyle(juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag);
 
     attackSlider.setNumDecimalPlacesToDisplay(2);
     releaseSlider.setNumDecimalPlacesToDisplay(2);
     filterQualitySlider.setNumDecimalPlacesToDisplay(2);
     outputGainSlider.setNumDecimalPlacesToDisplay(2);
+    mixSlider.setNumDecimalPlacesToDisplay(2);
 
     attackSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     releaseSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     filterQualitySlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     filterOrderSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
     outputGainSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
+    mixSlider.setColour(juce::Slider::ColourIds::thumbColourId, mainColour);
 
     attackSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     releaseSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     filterQualitySlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     filterOrderSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
     outputGainSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
+    mixSlider.setTextBoxStyle(juce::Slider::TextEntryBoxPosition::TextBoxBelow, false, 60, 20);
 
     attackSlider.setTextValueSuffix("ms");
     releaseSlider.setTextValueSuffix("ms");
@@ -76,6 +82,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterQualitySlider.setBounds(200, 40, 80, 80);
     filterOrderSlider.setBounds(300, 40, 80, 80);
     outputGainSlider.setBounds(400, 40, 80, 80);
+    mixSlider.setBounds(500, 40, 80, 80);
     correlationEnabledButton.setBounds(200, 165, 200, 30);
     displayedChannelButton.setBounds(getLocalBounds().removeFromRight(40).removeFromTop(40));
 
@@ -87,6 +94,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     correlationLabel.setText("Correlation", juce::NotificationType::dontSendNotification);
     correlationLabel.setBounds(0, 132, 80, 40);
     correlationEnabledButtonLabel.setText("Correlation enabled", juce::NotificationType::dontSendNotification);
+    mixLabel.setText("Mix", juce::NotificationType::dontSendNotification);
 
     attackLabel.attachToComponent(&attackSlider, false);
     releaseLabel.attachToComponent(&releaseSlider, false);
@@ -94,6 +102,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderLabel.attachToComponent(&filterOrderSlider, false);
     outputGainLabel.attachToComponent(&outputGainSlider, false);
     correlationEnabledButtonLabel.attachToComponent(&correlationEnabledButton, false);
+    mixLabel.attachToComponent(&mixSlider, false);
 
     addAndMakeVisible(attackLabel);
     addAndMakeVisible(releaseLabel);
@@ -102,6 +111,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     addAndMakeVisible(outputGainLabel);
     addAndMakeVisible(correlationLabel);
     addAndMakeVisible(correlationEnabledButtonLabel);
+    addAndMakeVisible(mixLabel);
 }
 
 OvocoderAudioProcessorEditor::~OvocoderAudioProcessorEditor()

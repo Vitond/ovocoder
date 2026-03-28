@@ -54,6 +54,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "correlation_enabled",
             "Correlation enabled",
             false
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "mix", 
+            "Mix", 
+            juce::NormalisableRange(0.0f, 1.0f, 0.01f),
+            1.0f
         )
     );
     return parameterLayout;
@@ -82,6 +89,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("order", this);
     apvts.addParameterListener("gain", this);
     apvts.addParameterListener("correlation_enabled", this);
+    apvts.addParameterListener("mix", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -92,6 +100,7 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("order", this);
     apvts.removeParameterListener("gain", this);
     apvts.removeParameterListener("correlation_enabled", this);
+    apvts.removeParameterListener("mix", this);
 }
 
 //==============================================================================
@@ -183,6 +192,10 @@ void OvocoderAudioProcessor::setOutputGain(float gainInDb) {
     gain = std::pow(2, gainInDb / 10.0f);
 }
 
+void OvocoderAudioProcessor::setMix(float _mix) {
+    mix = _mix;
+}
+
 void OvocoderAudioProcessor::updateFilterCoefficients() {
     for (int channel = 0; channel < numChannels; channel++) {
         for (int i = 0; i < numBands; i++)  {
@@ -212,6 +225,8 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setOutputGain(newValue);
     } else if (parameterID == "correlation_enabled") {
         setCorrelationEnabled((bool)newValue);
+    } else if (parameterID == "mix") {
+        setMix(newValue);
     }
 }
 //==============================================================================
@@ -225,6 +240,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     setFilterOrder((int)apvts.getRawParameterValue("order")->load());
     setOutputGain(apvts.getRawParameterValue("gain")->load());
     setCorrelationEnabled(apvts.getRawParameterValue("correlation_enabled")->load());
+    setMix(apvts.getRawParameterValue("mix")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -431,7 +447,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 sumMainSample += appliedEnvelopeSample;
             }
 
-            mainChannelData[sample] = sumMainSample * gain;
+            mainChannelData[sample] = (std::sin(mix * juce::MathConstants<float>::halfPi) * sumMainSample + (std::cos(mix * juce::MathConstants<float>::halfPi)) * mainChannelData[sample]) * gain;
         }
 
         for (int band = 0; band < numBands; band++) {

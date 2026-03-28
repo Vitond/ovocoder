@@ -42,7 +42,8 @@ private:
       releaseSlider,
       filterQualitySlider,
       filterOrderSlider,
-      outputGainSlider;
+      outputGainSlider,
+      mixSlider;
 
     juce::ToggleButton correlationEnabledButton;
 
@@ -55,7 +56,8 @@ private:
       releaseSliderAttachment,
       filterQualitySliderAttachment,
       filterOrderSliderAttachment,
-      outputGainSliderAttachment;
+      outputGainSliderAttachment,
+      mixSliderAttachment;
 
     juce::AudioProcessorValueTreeState::ButtonAttachment correlationEnabledButtonAttachment;
 
@@ -66,7 +68,8 @@ private:
       filterOrderLabel,
       outputGainLabel,
       correlationLabel,
-      correlationEnabledButtonLabel;
+      correlationEnabledButtonLabel,
+      mixLabel;
 
     int displayedChannel = 0;
 

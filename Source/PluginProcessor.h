@@ -93,6 +93,7 @@ private:
     void setFilterOrder(int order);
     void setOutputGain(float gainInDb);
     void setCorrelationEnabled(bool enabled);
+    void setMix(float mix);
 
     void updateFilterCoefficients();
 
@@ -135,4 +136,6 @@ private:
 
     float outputEnvelopeStates[2][numBands] = {0.0f, 0.0f};
     std::atomic<float> outputEnvelopeValues[2][numBands] = {0.0f, 0.0f};
+
+    float mix = 1.0f;
 };
