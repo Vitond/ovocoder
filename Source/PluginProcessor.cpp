@@ -31,7 +31,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "q", 
             "Q", 
-            juce::NormalisableRange(0.5f, 20.0f, 0.01f, 0.2f),
+            juce::NormalisableRange(0.7071f, 20.0f, 0.01f, 0.2f),
             0.7071f
         ),
         std::make_unique<juce::AudioParameterInt>
@@ -74,14 +74,14 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
         (
             "min_freq", 
             "Min frequency", 
-            juce::NormalisableRange(20.0f, 20000.0f, 0.01f, 0.2f),
+            juce::NormalisableRange(20.0f, 20000.0f, 0.1f, 0.2f),
             20.0f
         ),
         std::make_unique<juce::AudioParameterFloat>
         (
             "max_freq", 
             "Max frequency", 
-            juce::NormalisableRange(20.0f, 20000.0f, 0.01f, 0.2f),
+            juce::NormalisableRange(20.0f, 20000.0f, 0.1f, 0.2f),
             20000.0f
         )
     );

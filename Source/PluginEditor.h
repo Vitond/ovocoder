@@ -73,7 +73,6 @@ private:
       filterQualityLabel,
       filterOrderLabel,
       outputGainLabel,
-      correlationLabel,
       correlationEnabledButtonLabel,
       mixLabel,
       numBandsLabel,
@@ -84,8 +83,7 @@ private:
 
     juce::TextButton displayedChannelButton;
 
-    int legendRectSize = 30;
-    int legendRectTextGap = 10;
+    int legendRectSize = 20;
+    int legendRectTextGap = 5;
     int legendTextWidth = 100;
-    int legendRowGap = legendRectSize + 5;
 };
