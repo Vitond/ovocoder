@@ -69,6 +69,20 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "Mix", 
             juce::NormalisableRange(0.0f, 1.0f, 0.01f),
             1.0f
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "min_freq", 
+            "Min frequency", 
+            juce::NormalisableRange(20.0f, 20000.0f, 0.01f, 0.2f),
+            20.0f
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "max_freq", 
+            "Max frequency", 
+            juce::NormalisableRange(20.0f, 20000.0f, 0.01f, 0.2f),
+            20000.0f
         )
     );
     return parameterLayout;
@@ -99,6 +113,8 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("correlation_enabled", this);
     apvts.addParameterListener("mix", this);
     apvts.addParameterListener("num_bands", this);
+    apvts.addParameterListener("min_freq", this);
+    apvts.addParameterListener("max_freq", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -111,6 +127,8 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("correlation_enabled", this);
     apvts.removeParameterListener("mix", this);
     apvts.removeParameterListener("num_bands", this);
+    apvts.removeParameterListener("min_freq", this);
+    apvts.removeParameterListener("max_freq", this);
 }
 
 //==============================================================================
@@ -177,6 +195,16 @@ void OvocoderAudioProcessor::changeProgramName (int index, const juce::String& n
 
 void OvocoderAudioProcessor::setNumBands(int _numBands) {
     numBands = _numBands;
+    updateFilterCoefficients();
+}
+
+void OvocoderAudioProcessor::setMinFreq(float _minFreq) {
+    minCenterFreq = _minFreq;
+    updateFilterCoefficients();
+}
+
+void OvocoderAudioProcessor::setMaxFreq(float _maxFreq) {
+    maxCenterFreq = _maxFreq;
     updateFilterCoefficients();
 }
 
@@ -249,6 +277,10 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setMix(newValue);
     } else if (parameterID == "num_bands") {
         setNumBands((int)newValue);
+    } else if (parameterID == "min_freq") {
+        setMinFreq(newValue);
+    } else if (parameterID == "max_freq") {
+        setMaxFreq(newValue);
     }
 }
 //==============================================================================
@@ -264,6 +296,8 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     setCorrelationEnabled(apvts.getRawParameterValue("correlation_enabled")->load());
     setMix(apvts.getRawParameterValue("mix")->load());
     setNumBands((int)apvts.getRawParameterValue("num_bands")->load());
+    setMinFreq(apvts.getRawParameterValue("min_freq")->load());
+    setMaxFreq(apvts.getRawParameterValue("max_freq")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;

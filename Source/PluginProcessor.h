@@ -97,6 +97,8 @@ private:
     void setCorrelationEnabled(bool enabled);
     void setNumBands(int _numBands);
     void setMix(float mix);
+    void setMinFreq(float minFreq);
+    void setMaxFreq(float maxFreq);
 
     void updateFilterCoefficients();
 
