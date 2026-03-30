@@ -42,13 +42,12 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             8,
             2
         ),
-        std::make_unique<juce::AudioParameterInt>
+        std::make_unique<juce::AudioParameterFloat>
         (
-            "num_bands", 
-            "Bands", 
-            3,
-            64,
-            8
+            "num_bands",
+            "Bands",
+            juce::NormalisableRange<float>(3.0f, 64.0f, 1.0f, 0.449f),
+            8.0f
         ),
         std::make_unique<juce::AudioParameterFloat>
         (
