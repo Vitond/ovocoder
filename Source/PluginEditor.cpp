@@ -99,6 +99,7 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     attackSlider.setTextValueSuffix("ms");
     releaseSlider.setTextValueSuffix("ms");
     outputGainSlider.setTextValueSuffix("db");
+    processedGainSlider.setTextValueSuffix("db");
 
     minFreqSlider.setBounds(0, 40, 80, 80);
     maxFreqSlider.setBounds(100, 40, 80, 80);
@@ -107,10 +108,9 @@ OvocoderAudioProcessorEditor::OvocoderAudioProcessorEditor (OvocoderAudioProcess
     filterOrderSlider.setBounds(400, 40, 80, 80);
     attackSlider.setBounds(500, 40, 80, 80);
     releaseSlider.setBounds(600, 40, 80, 80);
-    processedGainSlider.setBounds(700, 40, 80, 80);
+    processedGainSlider.setBounds(690, 40, 100, 80);
     mixSlider.setBounds(800, 40, 80, 80);
     outputGainSlider.setBounds(900, 40, 80, 80);
-    
   
     correlationEnabledButton.setBounds(230, 135, 200, 30);
     displayedChannelButton.setBounds(650, 138, 25, 25);
