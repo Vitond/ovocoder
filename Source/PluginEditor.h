@@ -46,7 +46,8 @@ private:
       mixSlider,
       numBandsSlider,
       minFreqSlider,
-      maxFreqSlider;
+      maxFreqSlider,
+      processedGainSlider;
 
     juce::ToggleButton correlationEnabledButton;
 
@@ -63,7 +64,8 @@ private:
       mixSliderAttachment,
       numBandsSliderAttachment,
       minFreqSliderAttachment,
-      maxFreqSliderAttachment;
+      maxFreqSliderAttachment,
+      processedGainSliderAttachment;
 
     juce::AudioProcessorValueTreeState::ButtonAttachment correlationEnabledButtonAttachment;
 
@@ -77,7 +79,8 @@ private:
       mixLabel,
       numBandsLabel,
       minFreqLabel,
-      maxFreqLabel;
+      maxFreqLabel,
+      processedGainLabel;
 
     int displayedChannel = 0;
 

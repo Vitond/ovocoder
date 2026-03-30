@@ -99,6 +99,7 @@ private:
     void setMix(float mix);
     void setMinFreq(float minFreq);
     void setMaxFreq(float maxFreq);
+    void setProcessedGain(float gainInDb);
 
     void updateFilterCoefficients();
 
@@ -114,6 +115,7 @@ private:
     int order = 2;
 
     float gain = 1.0;
+    float processed_gain = 1.0;
 
     // Autocorrelation
     float minFundamentalFreq = 60.0; 

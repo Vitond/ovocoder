@@ -82,6 +82,13 @@ juce::AudioProcessorValueTreeState::ParameterLayout OvocoderAudioProcessor::crea
             "Max frequency", 
             juce::NormalisableRange(20.0f, 20000.0f, 0.1f, 0.2f),
             20000.0f
+        ),
+        std::make_unique<juce::AudioParameterFloat>
+        (
+            "proc_gain", 
+            "Processed gain", 
+            juce::NormalisableRange(0.0f, 40.0f, 0.01f, 0.2f),
+            0.0f
         )
     );
     return parameterLayout;
@@ -114,6 +121,7 @@ OvocoderAudioProcessor::OvocoderAudioProcessor()
     apvts.addParameterListener("num_bands", this);
     apvts.addParameterListener("min_freq", this);
     apvts.addParameterListener("max_freq", this);
+    apvts.addParameterListener("proc_gain", this);
 }
 
 OvocoderAudioProcessor::~OvocoderAudioProcessor()
@@ -128,6 +136,7 @@ OvocoderAudioProcessor::~OvocoderAudioProcessor()
     apvts.removeParameterListener("num_bands", this);
     apvts.removeParameterListener("min_freq", this);
     apvts.removeParameterListener("max_freq", this);
+    apvts.removeParameterListener("proc_gain", this);
 }
 
 //==============================================================================
@@ -234,6 +243,10 @@ void OvocoderAudioProcessor::setOutputGain(float gainInDb) {
     gain = std::pow(2, gainInDb / 10.0f);
 }
 
+void OvocoderAudioProcessor::setProcessedGain(float gainInDb) {
+    processed_gain = std::pow(2, gainInDb / 10.0f);
+}
+
 void OvocoderAudioProcessor::setMix(float _mix) {
     mix = _mix;
 }
@@ -280,6 +293,8 @@ void OvocoderAudioProcessor::parameterChanged(const juce::String & parameterID,f
         setMinFreq(newValue);
     } else if (parameterID == "max_freq") {
         setMaxFreq(newValue);
+    } else if (parameterID == "proc_gain") {
+        setProcessedGain(newValue);
     }
 }
 //==============================================================================
@@ -297,6 +312,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     setNumBands((int)apvts.getRawParameterValue("num_bands")->load());
     setMinFreq(apvts.getRawParameterValue("min_freq")->load());
     setMaxFreq(apvts.getRawParameterValue("max_freq")->load());
+    setProcessedGain(apvts.getRawParameterValue("proc_gain")->load());
 
     juce::dsp::ProcessSpec spec;
     spec.sampleRate = sampleRate;
@@ -503,7 +519,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
                 sumMainSample += appliedEnvelopeSample;
             }
 
-            mainChannelData[sample] = (std::sin(mix * juce::MathConstants<float>::halfPi) * sumMainSample + (std::cos(mix * juce::MathConstants<float>::halfPi)) * mainChannelData[sample]) * gain;
+            mainChannelData[sample] = (std::sin(mix * juce::MathConstants<float>::halfPi) * sumMainSample * processed_gain + (std::cos(mix * juce::MathConstants<float>::halfPi)) * mainChannelData[sample]) * gain;
         }
 
         for (int band = 0; band < numBands; band++) {
