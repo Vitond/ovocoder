@@ -240,11 +240,11 @@ void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
 }
 
 void OvocoderAudioProcessor::setOutputGain(float gainInDb) {
-    gain = std::pow(2, gainInDb / 10.0f);
+    gain = std::pow(10, gainInDb / 20.0f);
 }
 
 void OvocoderAudioProcessor::setProcessedGain(float gainInDb) {
-    processed_gain = std::pow(2, gainInDb / 10.0f);
+    processed_gain = std::pow(10, gainInDb / 20.0f);
 }
 
 void OvocoderAudioProcessor::setMix(float _mix) {
