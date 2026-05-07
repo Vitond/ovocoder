@@ -61,7 +61,7 @@ public:
     float getCorrelationValue(int channel) const {return correlationValues[channel].load();}
     float getMainInputEnvelopeValue(int channel, int band) const { return mainInputEnvelopeValues[channel][band].load(); }
     float getOutputEnvelopeValue(int channel, int band) const { return outputEnvelopeValues[channel][band].load(); }
-    int getNumBands() const {return numBands; }
+    int getNumBands() const { return numBands.load(); }
 
     static constexpr int numChannels = 2;
     static constexpr int maxBands = MAX_BANDS;
@@ -72,8 +72,8 @@ private:
     //==============================================================================
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OvocoderAudioProcessor)
     float envelopeStates[2][MAX_BANDS] = {0.0f, 0.0f};
-    float attackCoeff = 0.0f;
-    float releaseCoeff = 0.0f;
+    std::atomic<float> attackCoeff{0.0f};
+    std::atomic<float> releaseCoeff{0.0f};
     float correlationAttackCoeff = 0.0f;
     float correlationReleaseCoeff = 0.0f;
     std::atomic<float> envelopeValues[2][MAX_BANDS] = {0.0f, 0.0f};
@@ -107,15 +107,15 @@ private:
 
     void parameterChanged(const juce::String & parameterId, float newValue) override;
 
-    float qualityFactor = 0.7071f;
+    std::atomic<float> qualityFactor{0.7071f};
 
-    float minCenterFreq = 20.0;
-    float maxCenterFreq = 20000.0;
+    std::atomic<float> minCenterFreq{20.0f};
+    std::atomic<float> maxCenterFreq{20000.0f};
 
-    int order = 2;
+    std::atomic<int> order{2};
 
-    float gain = 1.0;
-    float processed_gain = 1.0;
+    std::atomic<float> gain{1.0f};
+    std::atomic<float> processed_gain{1.0f};
 
     // Autocorrelation
     float minFundamentalFreq = 60.0; 
@@ -136,7 +136,7 @@ private:
 
     Filter correlationDownsampleFilters[2];
 
-    bool correlationEnabled = false;
+    std::atomic<bool> correlationEnabled{false};
 
     float mainInputEnvelopeStates[2][MAX_BANDS] = {0.0f, 0.0f};
     std::atomic<float> mainInputEnvelopeValues[2][MAX_BANDS] = {0.0f, 0.0f};
@@ -144,7 +144,8 @@ private:
     float outputEnvelopeStates[2][MAX_BANDS] = {0.0f, 0.0f};
     std::atomic<float> outputEnvelopeValues[2][MAX_BANDS] = {0.0f, 0.0f};
 
-    float mix = 1.0f;
+    std::atomic<float> mix{1.0f};
 
-    int numBands = 8;
+    std::atomic<int> numBands{8};
+    std::atomic<bool> filtersDirty{false};
 };

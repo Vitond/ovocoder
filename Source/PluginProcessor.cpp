@@ -202,67 +202,71 @@ void OvocoderAudioProcessor::changeProgramName (int index, const juce::String& n
 }
 
 void OvocoderAudioProcessor::setNumBands(int _numBands) {
-    numBands = _numBands;
-    updateFilterCoefficients();
+    numBands.store(_numBands);
+    filtersDirty.store(true);
 }
 
 void OvocoderAudioProcessor::setMinFreq(float _minFreq) {
-    minCenterFreq = _minFreq;
-    updateFilterCoefficients();
+    minCenterFreq.store(_minFreq);
+    filtersDirty.store(true);
 }
 
 void OvocoderAudioProcessor::setMaxFreq(float _maxFreq) {
-    maxCenterFreq = _maxFreq;
-    updateFilterCoefficients();
+    maxCenterFreq.store(_maxFreq);
+    filtersDirty.store(true);
 }
 
 void OvocoderAudioProcessor::setAttackCoeff(float attackInMs) {
     float attackInSamples = attackInMs * sampleRate / 1000;
-    attackCoeff = std::exp(-1 / attackInSamples);
+    attackCoeff.store(std::exp(-1.0f / attackInSamples));
 }
 
 void OvocoderAudioProcessor::setReleaseCoeff(float releaseInMs) {
     float releaseInSamples = releaseInMs * sampleRate / 1000;
-    releaseCoeff = std::exp(-1 / releaseInSamples);
+    releaseCoeff.store(std::exp(-1.0f / releaseInSamples));
 }
 
 void OvocoderAudioProcessor::setFilterOrder(int _order) {
-    order = _order;
+    order.store(_order);
 }
 
 void OvocoderAudioProcessor::setCorrelationEnabled(bool _enabled) {
-    correlationEnabled = _enabled;
+    correlationEnabled.store(_enabled);
 }
 
 void OvocoderAudioProcessor::setFilterQualityFactor(float Q) {
-    qualityFactor = Q;
-    updateFilterCoefficients();
+    qualityFactor.store(Q);
+    filtersDirty.store(true);
 }
 
 void OvocoderAudioProcessor::setOutputGain(float gainInDb) {
-    gain = std::pow(10, gainInDb / 20.0f);
+    gain.store(std::pow(10.0f, gainInDb / 20.0f));
 }
 
 void OvocoderAudioProcessor::setProcessedGain(float gainInDb) {
-    processed_gain = std::pow(10, gainInDb / 20.0f);
+    processed_gain.store(std::pow(10.0f, gainInDb / 20.0f));
 }
 
 void OvocoderAudioProcessor::setMix(float _mix) {
-    mix = _mix;
+    mix.store(_mix);
 }
 
 void OvocoderAudioProcessor::updateFilterCoefficients() {
+    const int nb = numBands.load();
+    const float minF = minCenterFreq.load();
+    const float maxF = maxCenterFreq.load();
+    const float Q = qualityFactor.load();
     for (int channel = 0; channel < numChannels; channel++) {
-        for (int i = 0; i < numBands; i++)  {
+        for (int i = 0; i < nb; i++)  {
             for (int o = 0; o < MAX_ORDER; o++) {
                 float ratio;
-                if (numBands == 1) {
+                if (nb == 1) {
                    ratio = 0.0f;
                 } else {
-                   ratio = static_cast<float>(i) / (numBands - 1);
+                   ratio = static_cast<float>(i) / (nb - 1);
                 }
-                float centerFreq = minCenterFreq * std::pow(maxCenterFreq / minCenterFreq, ratio);
-                Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, qualityFactor);
+                float centerFreq = minF * std::pow(maxF / minF, ratio);
+                Coefficients::Ptr coefficients = Coefficients::makeBandPass(sampleRate, centerFreq, Q);
                 sidechainFilters[channel][i][o].coefficients = coefficients;
                 mainFilters[channel][i][o].coefficients = coefficients;
             }
@@ -341,6 +345,7 @@ void OvocoderAudioProcessor::prepareToPlay (double _sampleRate, int samplesPerBl
     lagEnergyLevels.clear();
 
     updateFilterCoefficients();
+    filtersDirty.store(false);
 
     processBuffer.setSize(numChannels, samplesPerBlock);
     outputBuffer.setSize(numChannels, samplesPerBlock);
@@ -411,12 +416,18 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
     bool unvoicedBufferActive = unvoicedBuffer.getNumChannels() == numChannels;
 
-    // This is the place where you'd normally do the guts of your plugin's
-    // audio processing...
-    // Make sure to reset the state if your inner loop is processing
-    // the samples and the outer loop is handling the channels.
-    // Alternatively, you can process the samples with the channels
-    // interleaved by keeping the same state.
+    if (filtersDirty.exchange(false))
+        updateFilterCoefficients();
+
+    const int currentNumBands = numBands.load();
+    const int currentOrder = order.load();
+    const float currentAttackCoeff = attackCoeff.load();
+    const float currentReleaseCoeff = releaseCoeff.load();
+    const float currentGain = gain.load();
+    const float currentProcessedGain = processed_gain.load();
+    const float currentMix = mix.load();
+    const bool  currentCorrelationEnabled = correlationEnabled.load();
+
     for (int channel = 0; channel < numChannels; ++channel)
     {
         float* sidechainChannelData = sidechainBuffer.getWritePointer(channel);
@@ -430,7 +441,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
             float correlation = 0;
             float filteredSample = correlationDownsampleFilters[channel].processSample(sidechainChannelData[sample]);
-            if (correlationEnabled && (sample % AUTOCORRELATION_DOWNSAMPLE == 0)) {
+            if (currentCorrelationEnabled && (sample % AUTOCORRELATION_DOWNSAMPLE == 0)) {
                 int correlationBufferPointer = correlationBufferPointers[channel];
                 int currentWindowEndSample = (correlationBufferPointer - (maxLag - minLag) + correlationBufferSize) % correlationBufferSize;
                 currentWindowEnergyLevels[channel] += filteredSample * filteredSample;
@@ -471,7 +482,7 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
             }
 
             float voicedGain = 1.0f, unvoicedGain = 0.0f;
-            if (correlationEnabled && unvoicedBufferActive) {
+            if (currentCorrelationEnabled && unvoicedBufferActive) {
                 float angle = lastCorrelation[channel] * juce::MathConstants<float>::halfPi;
                 voicedGain = std::sin(angle);
                 unvoicedGain = std::cos(angle);
@@ -479,31 +490,31 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
             float sumMainSample = 0.0f;
 
-            for (int band = 0; band < numBands; band++) {
+            for (int band = 0; band < currentNumBands; band++) {
                 float processedSidechainSample = sidechainChannelData[sample];
-                for (int o = 0; o < order; o++) {
+                for (int o = 0; o < currentOrder; o++) {
                     processedSidechainSample = sidechainFilters[channel][band][o].processSample(processedSidechainSample);
                 }
                 float absoluteProcessedSidechainValue = std::abs(processedSidechainSample);
                 float envelopeState = envelopeStates[channel][band];
 
                 if (absoluteProcessedSidechainValue > envelopeState) {
-                    envelopeStates[channel][band] += (absoluteProcessedSidechainValue - envelopeState) * (1.0f - attackCoeff);
+                    envelopeStates[channel][band] += (absoluteProcessedSidechainValue - envelopeState) * (1.0f - currentAttackCoeff);
                 } else {
-                    envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * (1.0f - releaseCoeff);
+                    envelopeStates[channel][band] -= (envelopeState - absoluteProcessedSidechainValue) * (1.0f - currentReleaseCoeff);
                 }
 
                 float processedSample = mainChannelData[sample] * voicedGain + (unvoicedChannelData != nullptr ? unvoicedChannelData[sample] * unvoicedGain : 0.0f);
-                for (int o = 0; o < order; o++) {
+                for (int o = 0; o < currentOrder; o++) {
                     processedSample = mainFilters[channel][band][o].processSample(processedSample);
                 }
 
                 float absoluteProcessedSample = std::abs(processedSample);
                 float mainEnvelopeState = mainInputEnvelopeStates[channel][band];
                 if (absoluteProcessedSample > mainEnvelopeState) {
-                    mainInputEnvelopeStates[channel][band] += (absoluteProcessedSample - mainEnvelopeState) * (1.0f - attackCoeff);
+                    mainInputEnvelopeStates[channel][band] += (absoluteProcessedSample - mainEnvelopeState) * (1.0f - currentAttackCoeff);
                 } else {
-                    mainInputEnvelopeStates[channel][band] -= (mainEnvelopeState - absoluteProcessedSample) * (1.0f - releaseCoeff);
+                    mainInputEnvelopeStates[channel][band] -= (mainEnvelopeState - absoluteProcessedSample) * (1.0f - currentReleaseCoeff);
                 }
 
                 float appliedEnvelopeSample = processedSample * envelopeStates[channel][band];
@@ -511,18 +522,18 @@ void OvocoderAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juc
 
                 float outputEnvelopeState = outputEnvelopeStates[channel][band];
                 if (absoluteAppliedEnvelopeSample > outputEnvelopeState) {
-                    outputEnvelopeStates[channel][band] += (absoluteAppliedEnvelopeSample - outputEnvelopeState) * (1.0f - attackCoeff);
+                    outputEnvelopeStates[channel][band] += (absoluteAppliedEnvelopeSample - outputEnvelopeState) * (1.0f - currentAttackCoeff);
                 } else {
-                    outputEnvelopeStates[channel][band] -= (outputEnvelopeState - absoluteAppliedEnvelopeSample) * (1.0f - releaseCoeff);
+                    outputEnvelopeStates[channel][band] -= (outputEnvelopeState - absoluteAppliedEnvelopeSample) * (1.0f - currentReleaseCoeff);
                 }
 
                 sumMainSample += appliedEnvelopeSample;
             }
 
-            mainChannelData[sample] = (std::sin(mix * juce::MathConstants<float>::halfPi) * sumMainSample * processed_gain + (std::cos(mix * juce::MathConstants<float>::halfPi)) * mainChannelData[sample]) * gain;
+            mainChannelData[sample] = (std::sin(currentMix * juce::MathConstants<float>::halfPi) * sumMainSample * currentProcessedGain + (std::cos(currentMix * juce::MathConstants<float>::halfPi)) * mainChannelData[sample]) * currentGain;
         }
 
-        for (int band = 0; band < numBands; band++) {
+        for (int band = 0; band < currentNumBands; band++) {
             envelopeValues[channel][band].store(envelopeStates[channel][band]);
             mainInputEnvelopeValues[channel][band].store(mainInputEnvelopeStates[channel][band]);
             outputEnvelopeValues[channel][band].store(outputEnvelopeStates[channel][band]);
